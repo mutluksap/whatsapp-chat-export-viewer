@@ -53,6 +53,46 @@ export type Dict = {
   openGallery: string;
   noMedia: string;
   messageDeleted: string;
+  brand: string;
+  navHome: string;
+  navChats: string;
+  navPrivacy: string;
+  navAbout: string;
+  navContact: string;
+  homeHeroTitle: string;
+  homeHeroSubtitle: string;
+  homeHeroCta: string;
+  homeFeature1Title: string;
+  homeFeature1Body: string;
+  homeFeature2Title: string;
+  homeFeature2Body: string;
+  homeFeature3Title: string;
+  homeFeature3Body: string;
+  homeFeaturesHeading: string;
+  homeImportSectionHeading: string;
+  homeImportSectionLead: string;
+  privacyTitle: string;
+  privacyLead: string;
+  privacySection1Title: string;
+  privacySection1Body: string;
+  privacySection2Title: string;
+  privacySection2Body: string;
+  privacySection3Title: string;
+  privacySection3Body: string;
+  aboutTitle: string;
+  aboutLead: string;
+  aboutBody1: string;
+  aboutBody2: string;
+  aboutTechHeading: string;
+  contactTitle: string;
+  contactLead: string;
+  contactEmailLabel: string;
+  contactGithubLabel: string;
+  contactBody: string;
+  footerCopyright: string;
+  footerTagline: string;
+  openMenu: string;
+  closeMenu: string;
 };
 
 const tr: Dict = {
@@ -136,6 +176,61 @@ const tr: Dict = {
   openGallery: "Galeriyi aç",
   noMedia: "Bu sohbette medya yok",
   messageDeleted: "Bu mesaj silindi.",
+  brand: "WA Görüntüleyici",
+  navHome: "Anasayfa",
+  navChats: "Sohbetler",
+  navPrivacy: "Gizlilik",
+  navAbout: "Hakkında",
+  navContact: "İletişim",
+  homeHeroTitle: "WhatsApp sohbetlerinizi göz alıcı şekilde inceleyin",
+  homeHeroSubtitle:
+    "Dışa aktardığınız .txt veya .zip dosyalarınızı sürükleyip bırakın; sohbeti tıpkı WhatsApp Web'deki gibi göz atılabilir bir arayüzde görün. Dosyalarınız hiçbir yere yüklenmez.",
+  homeHeroCta: "Hemen başla",
+  homeFeaturesHeading: "Neden bu görüntüleyici?",
+  homeFeature1Title: "Gizli ve yerel",
+  homeFeature1Body:
+    "Tüm işleme tarayıcınızda olur. Dosyalarınız sunucuya yüklenmez, ağa gitmez.",
+  homeFeature2Title: "Medyalı destek",
+  homeFeature2Body:
+    "Fotoğraf, video, sticker ve sesli mesajlar dahil .zip dışa aktarımları açabilir, galeride toplu görüntüleyebilirsiniz.",
+  homeFeature3Title: "WhatsApp tarzı arayüz",
+  homeFeature3Body:
+    "Sohbetler, mavi okundu tikleri ve baloncuk arayüzü ile tam WhatsApp Web hissi.",
+  homeImportSectionHeading: "Dosyanızı içe aktarın",
+  homeImportSectionLead:
+    "Dışa aktardığınız sohbeti aşağıya bırakın ve hemen görüntülemeye başlayın.",
+  privacyTitle: "Gizlilik",
+  privacyLead:
+    "Veri minimizasyonu bu projenin temel değeri. Aşağıda nelerin nerede olduğunu görebilirsiniz.",
+  privacySection1Title: "Dosyalarınız tarayıcınızda kalır",
+  privacySection1Body:
+    "Yüklediğiniz .txt veya .zip dosyaları herhangi bir sunucuya gönderilmez. Tüm ayrıştırma ve görüntüleme tamamen tarayıcınızda yapılır.",
+  privacySection2Title: "Çerez yok, izleme yok",
+  privacySection2Body:
+    "Üçüncü taraf analitik araçları, reklam ağları veya kullanıcı izleme çerezleri kullanmıyoruz. Sadece tema ve dil tercihiniz yerel olarak saklanır.",
+  privacySection3Title: "Üçüncü taraf içerikler",
+  privacySection3Body:
+    "FontAwesome ikonları için bir CDN bağlantısı kullanılır. Sayfayı yalnızca ikon dosyalarını yüklemek için bu CDN'e istek atar; başka veri paylaşılmaz.",
+  aboutTitle: "Hakkında",
+  aboutLead:
+    "WhatsApp Sohbet Görüntüleyici, dışa aktarılmış sohbetleri tanıdık bir görsel arayüzde sunmak için açık kaynaklı bir araçtır.",
+  aboutBody1:
+    "Aile, arkadaş veya iş sohbetlerinizi yedekledikten sonra düz metin dosyasında okumanın ne kadar zahmetli olduğunu bildiğimiz için bu görüntüleyiciyi yaptık. Tarayıcıda, hızlı, gizli ve estetik.",
+  aboutBody2:
+    "Proje hala geliştirilmektedir; geri bildirimleriniz, fikirleriniz veya katkılarınız değerlidir.",
+  aboutTechHeading: "Kullanılan teknolojiler",
+  contactTitle: "İletişim",
+  contactLead:
+    "Sorular, geri bildirim veya katkı için bizimle iletişime geçin.",
+  contactEmailLabel: "E-posta",
+  contactGithubLabel: "GitHub",
+  contactBody:
+    "Yanıt süremiz genelde birkaç iş günüdür. Hata bildirimleri için GitHub Issues tercih edilir.",
+  footerCopyright: "© 2026 WA Görüntüleyici",
+  footerTagline:
+    "Tarayıcınızda çalışan, gizliliğe saygılı WhatsApp sohbet görüntüleyici.",
+  openMenu: "Menüyü aç",
+  closeMenu: "Menüyü kapat",
 };
 
 const en: Dict = {
@@ -217,6 +312,61 @@ const en: Dict = {
   openGallery: "Open gallery",
   noMedia: "No media in this chat",
   messageDeleted: "This message was deleted.",
+  brand: "WA Viewer",
+  navHome: "Home",
+  navChats: "Chats",
+  navPrivacy: "Privacy",
+  navAbout: "About",
+  navContact: "Contact",
+  homeHeroTitle: "Browse your WhatsApp chats in style",
+  homeHeroSubtitle:
+    "Drag and drop your exported .txt or .zip and view the conversation in a familiar WhatsApp Web–like interface. Your files never leave your browser.",
+  homeHeroCta: "Get started",
+  homeFeaturesHeading: "Why this viewer?",
+  homeFeature1Title: "Private and local",
+  homeFeature1Body:
+    "All processing happens in your browser. Your files are never uploaded, never sent over the network.",
+  homeFeature2Title: "Media-aware",
+  homeFeature2Body:
+    "Open .zip exports complete with photos, videos, stickers and voice notes — and browse them all in a built-in gallery.",
+  homeFeature3Title: "WhatsApp-style UI",
+  homeFeature3Body:
+    "Authentic chat bubbles, blue read ticks and a familiar layout — it feels exactly like WhatsApp Web.",
+  homeImportSectionHeading: "Import your chat",
+  homeImportSectionLead:
+    "Drop your exported chat below and start exploring it instantly.",
+  privacyTitle: "Privacy",
+  privacyLead:
+    "Data minimization is a core value of this project. Here is exactly what stays where.",
+  privacySection1Title: "Your files stay in your browser",
+  privacySection1Body:
+    "Uploaded .txt or .zip files are never sent to any server. All parsing and rendering happen entirely in your browser.",
+  privacySection2Title: "No cookies, no tracking",
+  privacySection2Body:
+    "We do not use third-party analytics, ad networks or tracking cookies. Only your theme and language preferences are stored locally.",
+  privacySection3Title: "Third-party assets",
+  privacySection3Body:
+    "FontAwesome icons are loaded from a public CDN. The page only requests icon files from that CDN; no other data is shared.",
+  aboutTitle: "About",
+  aboutLead:
+    "WhatsApp Chat Viewer is an open-source tool that displays exported chats in a familiar visual interface.",
+  aboutBody1:
+    "Reading a backup of your conversations as a plain text file is tedious. We built this viewer so reviewing your family, friend or work chats feels natural again — in the browser, fast, private and clean.",
+  aboutBody2:
+    "The project is under active development; feedback, ideas and contributions are very welcome.",
+  aboutTechHeading: "Built with",
+  contactTitle: "Contact",
+  contactLead:
+    "Reach out for questions, feedback or contributions.",
+  contactEmailLabel: "Email",
+  contactGithubLabel: "GitHub",
+  contactBody:
+    "We usually reply within a few business days. For bug reports, please use GitHub Issues.",
+  footerCopyright: "© 2026 WA Viewer",
+  footerTagline:
+    "A privacy-respecting WhatsApp chat viewer that runs entirely in your browser.",
+  openMenu: "Open menu",
+  closeMenu: "Close menu",
 };
 
 export const TRANSLATIONS: Record<Locale, Dict> = { tr, en };

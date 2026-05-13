@@ -155,10 +155,10 @@ export default function ChatView({
   }, [chat.messages, meSender, isGroup, dict, handleMediaClick]);
 
   return (
-    <div className="min-h-screen w-full bg-wa-bg">
-      <div className="hidden md:block h-[18px] bg-wa-green-dark" />
-      <div className="md:max-w-[1600px] md:mx-auto md:px-4 md:-mt-[18px]">
-        <div className="md:shadow-2xl md:rounded-sm overflow-hidden flex h-screen md:h-[calc(100vh-30px)]">
+    <div className="flex-1 flex flex-col w-full bg-wa-bg">
+      <div className="hidden md:block h-[18px] bg-wa-green-dark shrink-0" />
+      <div className="md:max-w-[1600px] md:mx-auto md:px-4 md:-mt-[18px] w-full flex-1 flex flex-col min-h-0">
+        <div className="md:shadow-2xl md:rounded-sm overflow-hidden flex flex-1 min-h-[520px] md:min-h-[640px]">
           {/* Sidebar */}
           <aside
             className={`${

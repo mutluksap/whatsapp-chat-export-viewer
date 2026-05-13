@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { I18nProvider } from "@/components/I18nProvider";
 import { ThemeProvider, THEME_INIT_SCRIPT } from "@/components/ThemeProvider";
+import { ChatProvider } from "@/components/ChatProvider";
+import SiteHeader from "@/components/SiteHeader";
+import SiteFooter from "@/components/SiteFooter";
 
 export const metadata: Metadata = {
   title: "WhatsApp Chat Export Viewer",
@@ -27,7 +30,15 @@ export default function RootLayout({
       </head>
       <body className="font-sans antialiased">
         <ThemeProvider>
-          <I18nProvider>{children}</I18nProvider>
+          <I18nProvider>
+            <ChatProvider>
+              <div className="min-h-screen flex flex-col bg-wa-bg">
+                <SiteHeader />
+                <main className="flex-1 flex flex-col">{children}</main>
+                <SiteFooter />
+              </div>
+            </ChatProvider>
+          </I18nProvider>
         </ThemeProvider>
       </body>
     </html>
