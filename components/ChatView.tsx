@@ -373,7 +373,7 @@ export default function ChatView({
   );
 
   return (
-    <div className="h-dvh flex flex-col w-full bg-wa-bg overflow-hidden">
+    <div className="h-[100svh] supports-[height:100dvh]:h-[100dvh] flex flex-col w-full bg-wa-chat-bg overflow-hidden">
       <div className="w-full flex-1 min-h-0 flex flex-col">
         <div className="overflow-hidden flex flex-1 min-h-0">
           {/* Sidebar — on mobile, show by default whenever no chat is loaded
@@ -641,7 +641,7 @@ export default function ChatView({
               </div>
             ) : (
               <>
-            <header className="bg-wa-panel px-3 sm:px-4 py-2 flex items-center gap-3 border-l border-wa-divider">
+            <header className="sticky top-0 z-10 bg-wa-panel px-3 sm:px-4 py-2 flex items-center gap-3 border-l border-wa-divider shrink-0">
               <button
                 type="button"
                 onClick={() => setShowSidebar(true)}
@@ -728,7 +728,7 @@ export default function ChatView({
                   atBottomStateChange={setAtBottom}
                   atBottomThreshold={120}
                   increaseViewportBy={600}
-                  className="chat-scroll"
+                  className="chat-scroll overscroll-contain"
                   style={{ position: "absolute", inset: 0 }}
                   itemContent={(index) => {
                     const item = items[index];

@@ -206,12 +206,12 @@ function MessageBubble({
       className={`msg-cv flex px-3 sm:px-6 ${isOutgoing ? "justify-end" : "justify-start"}`}
     >
       <div
-        className={`relative ${bubbleCls} rounded-lg shadow-sm px-2.5 py-1.5 max-w-[85%] sm:max-w-[65%] transition-[outline] duration-200 ${
+        className={`relative ${bubbleCls} rounded-lg shadow-sm px-2.5 py-1.5 max-w-[85%] sm:max-w-[65%] transition-[outline-color] duration-200 outline outline-2 -outline-offset-2 ${
           showSender ? (isOutgoing ? "bubble-out mt-2" : "bubble-in mt-2") : "mt-0.5"
         } ${
           isActiveMatch
-            ? "outline outline-2 outline-wa-green-dark dark:outline-wa-green outline-offset-1"
-            : "outline outline-2 outline-transparent outline-offset-1"
+            ? "outline-wa-green-dark dark:outline-wa-green"
+            : "outline-transparent"
         }`}
       >
         {showSender && isGroup && !isOutgoing && message.sender && (
