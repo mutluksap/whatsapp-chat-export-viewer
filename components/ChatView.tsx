@@ -1,12 +1,19 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
-import type { LoadedChat } from "@/lib/types";
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
+import type { LoadedChat, Message } from "@/lib/types";
 import Avatar from "./Avatar";
 import MessageBubble from "./MessageBubble";
 import Lightbox, { type LightboxItem, type LightboxStart } from "./Lightbox";
 import LanguageSwitcher from "./LanguageSwitcher";
 import ThemeSwitcher from "./ThemeSwitcher";
+import ChatFilters, {
+  type ChatFiltersValue,
+  EMPTY_FILTERS,
+  hasActiveFilters,
+} from "./ChatFilters";
 import {
   formatDateSeparator,
   formatTime,
@@ -34,6 +41,75 @@ export default function ChatView({
   const [lightboxStart, setLightboxStart] = useState<LightboxStart | null>(
     null,
   );
+  const virtuosoRef = useRef<VirtuosoHandle | null>(null);
+  const [atBottom, setAtBottom] = useState(true);
+  const [filters, setFilters] = useState<ChatFiltersValue>(EMPTY_FILTERS);
+  const filtersActive = hasActiveFilters(filters);
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  // Ctrl/Cmd+F opens the search overlay; Esc closes it. Pressing Ctrl+F again
+  // also toggles it off. Native browser find is replaced with our in-chat search.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const isFind = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "f";
+      if (isFind) {
+        e.preventDefault();
+        setSearchOpen((v) => !v);
+      } else if (e.key === "Escape" && searchOpen) {
+        setSearchOpen(false);
+        setFilters(EMPTY_FILTERS);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [searchOpen]);
+
+  const closeSearch = useCallback(() => {
+    setSearchOpen(false);
+    setFilters(EMPTY_FILTERS);
+  }, []);
+
+  const filteredMessages = useMemo(() => {
+    if (!filtersActive) return chat.messages;
+    const q = filters.query.trim().toLowerCase();
+    const from = filters.dateFrom
+      ? new Date(filters.dateFrom + "T00:00:00")
+      : null;
+    const to = filters.dateTo
+      ? new Date(filters.dateTo + "T23:59:59.999")
+      : null;
+    const senderSet = new Set(filters.senders);
+    const mediaSet = new Set(filters.mediaTypes);
+    return chat.messages.filter((m) => {
+      if (m.isSystem) return false;
+      if (senderSet.size > 0 && (!m.sender || !senderSet.has(m.sender)))
+        return false;
+      if (from && m.timestamp && m.timestamp < from) return false;
+      if (to && m.timestamp && m.timestamp > to) return false;
+      if (mediaSet.size > 0) {
+        const att = m.attachment;
+        if (!att) {
+          if (!mediaSet.has("text")) return false;
+        } else if (!mediaSet.has(att.type)) {
+          return false;
+        }
+      }
+      if (q) {
+        const tx = (m.text || "").toLowerCase();
+        const fn = (m.attachment?.filename || "").toLowerCase();
+        if (!tx.includes(q) && !fn.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [chat.messages, filters, filtersActive]);
+
+  const scrollToBottom = useCallback(() => {
+    virtuosoRef.current?.scrollToIndex({
+      index: "LAST",
+      behavior: "smooth",
+      align: "end",
+    });
+  }, []);
 
   const isGroup = chat.participants.length > 2;
   const otherParticipants = chat.participants.filter((p) => p !== meSender);
@@ -91,39 +167,42 @@ export default function ChatView({
       : (lastMessage.text || "").slice(0, 60)
     : "";
 
-  const rendered = useMemo(() => {
-    const out: React.ReactNode[] = [];
+  type RenderItem =
+    | { type: "separator"; id: string; date: Date }
+    | {
+        type: "message";
+        id: string;
+        message: Message;
+        isOutgoing: boolean;
+        showSender: boolean;
+      };
+
+  const items = useMemo<RenderItem[]>(() => {
+    const out: RenderItem[] = [];
     let prevDate: Date | null = null;
     let prevSender: string | null = null;
     let prevTime: Date | null = null;
 
-    chat.messages.forEach((msg) => {
+    filteredMessages.forEach((msg) => {
       if (msg.timestamp) {
         if (!prevDate || !sameDayPublic(prevDate, msg.timestamp)) {
-          out.push(
-            <div
-              key={`sep-${msg.id}`}
-              className="flex justify-center my-3 px-4"
-            >
-              <div className="bg-wa-panel/95 text-wa-text-muted text-xs px-3 py-1.5 rounded-md shadow-sm">
-                {formatDateSeparator(msg.timestamp, dict)}
-              </div>
-            </div>,
-          );
+          out.push({
+            type: "separator",
+            id: `sep-${msg.id}`,
+            date: msg.timestamp,
+          });
           prevDate = msg.timestamp;
         }
       }
 
       if (msg.isSystem) {
-        out.push(
-          <MessageBubble
-            key={msg.id}
-            message={msg}
-            isOutgoing={false}
-            showSender={false}
-            isGroup={isGroup}
-          />,
-        );
+        out.push({
+          type: "message",
+          id: msg.id,
+          message: msg,
+          isOutgoing: false,
+          showSender: false,
+        });
         prevSender = null;
         prevTime = msg.timestamp;
         return;
@@ -136,37 +215,69 @@ export default function ChatView({
           : true;
       const showSender = msg.sender !== prevSender || gapBig;
 
-      out.push(
-        <MessageBubble
-          key={msg.id}
-          message={msg}
-          isOutgoing={isOutgoing}
-          showSender={showSender}
-          isGroup={isGroup}
-          onMediaClick={handleMediaClick}
-        />,
-      );
+      out.push({
+        type: "message",
+        id: msg.id,
+        message: msg,
+        isOutgoing,
+        showSender,
+      });
 
       prevSender = msg.sender;
       prevTime = msg.timestamp;
     });
 
     return out;
-  }, [chat.messages, meSender, isGroup, dict, handleMediaClick]);
+  }, [filteredMessages, meSender]);
+
+  const renderItem = useCallback(
+    (index: number, item: RenderItem) => {
+      if (item.type === "separator") {
+        return (
+          <div className="flex justify-center my-3 px-4">
+            <div className="bg-wa-panel/95 text-wa-text-muted text-xs px-3 py-1.5 rounded-md shadow-sm">
+              {formatDateSeparator(item.date, dict)}
+            </div>
+          </div>
+        );
+      }
+      return (
+        <MessageBubble
+          message={item.message}
+          isOutgoing={item.isOutgoing}
+          showSender={item.showSender}
+          isGroup={isGroup}
+          onMediaClick={handleMediaClick}
+        />
+      );
+    },
+    [dict, isGroup, handleMediaClick],
+  );
 
   return (
-    <div className="flex-1 flex flex-col w-full bg-wa-bg">
-      <div className="hidden md:block h-[18px] bg-wa-green-dark shrink-0" />
-      <div className="md:max-w-[1600px] md:mx-auto md:px-4 md:-mt-[18px] w-full flex-1 flex flex-col min-h-0">
-        <div className="md:shadow-2xl md:rounded-sm overflow-hidden flex flex-1 min-h-[520px] md:min-h-[640px]">
+    <div className="h-dvh flex flex-col w-full bg-wa-bg overflow-hidden">
+      <div className="w-full flex-1 min-h-0 flex flex-col">
+        <div className="overflow-hidden flex flex-1 min-h-0">
           {/* Sidebar */}
           <aside
             className={`${
               showSidebar ? "absolute inset-0 z-20 flex" : "hidden"
-            } md:relative md:flex md:w-[380px] md:shrink-0 flex-col bg-wa-sidebar border-r border-wa-divider`}
+            } md:relative md:flex md:w-[380px] md:shrink-0 flex-col bg-wa-sidebar border-r border-wa-divider overflow-hidden`}
           >
             <div className="bg-wa-panel px-4 py-2.5 flex items-center justify-between gap-2">
-              <div className="font-medium text-wa-text">{t("chat")}</div>
+              <Link
+                href="/"
+                className="group inline-flex items-center gap-2 font-medium text-wa-text hover:text-wa-green-dark dark:hover:text-wa-green transition"
+                title={t("navHome")}
+              >
+                <span className="w-7 h-7 rounded-full bg-wa-green-dark flex items-center justify-center transition-transform group-hover:scale-105">
+                  <i
+                    className="fa-brands fa-whatsapp text-white text-sm"
+                    aria-hidden
+                  />
+                </span>
+                {t("chat")}
+              </Link>
               <div className="flex items-center gap-1.5">
                 <ThemeSwitcher />
                 <LanguageSwitcher />
@@ -257,7 +368,7 @@ export default function ChatView({
           </aside>
 
           {/* Chat panel */}
-          <section className="flex-1 flex flex-col min-w-0">
+          <section className="flex-1 flex flex-col min-w-0 min-h-0">
             <header className="bg-wa-panel px-3 sm:px-4 py-2 flex items-center gap-3 border-l border-wa-divider">
               <button
                 type="button"
@@ -290,6 +401,18 @@ export default function ChatView({
                   </div>
                 </div>
               </button>
+              <button
+                type="button"
+                onClick={() => setSearchOpen(true)}
+                className="flex items-center justify-center w-9 h-9 rounded-full text-wa-text-muted hover:text-wa-text hover:bg-black/5 dark:hover:bg-white/5 transition"
+                title={t("searchInChat")}
+                aria-label={t("searchInChat")}
+              >
+                <i
+                  className="fa-solid fa-magnifying-glass text-base"
+                  aria-hidden
+                />
+              </button>
               {lightboxItems.length > 0 && (
                 <button
                   type="button"
@@ -317,13 +440,69 @@ export default function ChatView({
               </button>
             </header>
 
-            <div className="flex-1 overflow-y-auto chat-scroll wa-chat-bg py-3">
-              {rendered}
-              {chat.messages.length === 0 && (
-                <div className="h-full flex items-center justify-center text-wa-text-muted text-sm px-6 text-center">
-                  {t("noMessages")}
+            {searchOpen && (
+              <ChatFilters
+                value={filters}
+                onChange={setFilters}
+                participants={chat.participants}
+                matchCount={filteredMessages.length}
+                onClose={closeSearch}
+                autoFocus
+              />
+            )}
+
+            <div className="flex-1 min-h-0 relative wa-chat-bg">
+              {items.length === 0 ? (
+                <div className="absolute inset-0 flex items-center justify-center text-wa-text-muted text-sm px-6 text-center">
+                  {filtersActive ? t("filterNoMatches") : t("noMessages")}
                 </div>
+              ) : (
+                <Virtuoso
+                  ref={virtuosoRef}
+                  totalCount={items.length}
+                  followOutput
+                  atBottomStateChange={setAtBottom}
+                  atBottomThreshold={120}
+                  increaseViewportBy={600}
+                  className="chat-scroll"
+                  style={{ position: "absolute", inset: 0 }}
+                  itemContent={(index) => {
+                    const item = items[index];
+                    if (!item) return <div style={{ height: 1 }} />;
+                    if (item.type === "separator") {
+                      return (
+                        <div className="flex justify-center my-3 px-4">
+                          <div className="bg-wa-panel/95 text-wa-text-muted text-xs px-3 py-1.5 rounded-md shadow-sm">
+                            {formatDateSeparator(item.date, dict)}
+                          </div>
+                        </div>
+                      );
+                    }
+                    return (
+                      <MessageBubble
+                        message={item.message}
+                        isOutgoing={item.isOutgoing}
+                        showSender={item.showSender}
+                        isGroup={isGroup}
+                        onMediaClick={handleMediaClick}
+                      />
+                    );
+                  }}
+                />
               )}
+              <button
+                type="button"
+                onClick={scrollToBottom}
+                aria-label={t("scrollToBottom")}
+                title={t("scrollToBottom")}
+                className={`absolute bottom-3 right-3 w-10 h-10 rounded-full bg-wa-panel shadow-lg flex items-center justify-center text-wa-text-muted hover:text-wa-text hover:bg-wa-raised transition-all duration-200 z-10 ${
+                  !atBottom && items.length > 0
+                    ? "opacity-100 translate-y-0 pointer-events-auto"
+                    : "opacity-0 translate-y-2 pointer-events-none"
+                }`}
+              >
+                <i className="fa-solid fa-chevron-down text-base" aria-hidden />
+              </button>
             </div>
 
             <footer className="bg-wa-panel px-3 sm:px-4 py-2.5 flex items-center gap-3">

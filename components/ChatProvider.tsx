@@ -9,6 +9,7 @@ import {
 } from "react";
 import {
   LoadChatError,
+  type LoadProgress,
   loadFromTxt,
   loadFromZip,
   revokeBlobUrls,
@@ -23,10 +24,12 @@ type Ctx = {
   chatTitle: string;
   meSender: string | null;
   isLoading: boolean;
+  progress: LoadProgress | null;
   error: string | null;
   load: (file: File, mode: ImportMode) => Promise<boolean>;
   reset: () => void;
   setMeSender: (s: string | null) => void;
+  clearLoadingState: () => void;
 };
 
 const ChatContext = createContext<Ctx | null>(null);
@@ -65,6 +68,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [chatTitle, setChatTitle] = useState<string>("");
   const [meSender, setMeSender] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [progress, setProgress] = useState<LoadProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -76,7 +80,9 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const load = useCallback(
     async (file: File, mode: ImportMode): Promise<boolean> => {
       setError(null);
+      setProgress(null);
       setIsLoading(true);
+      let success = false;
       try {
         const lower = file.name.toLowerCase();
         if (mode === "text" && !lower.endsWith(".txt")) {
@@ -87,7 +93,9 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         }
 
         const loaded =
-          mode === "text" ? await loadFromTxt(file) : await loadFromZip(file);
+          mode === "text"
+            ? await loadFromTxt(file)
+            : await loadFromZip(file, (p) => setProgress(p));
 
         if (loaded.messages.length === 0) {
           throw new Error("errorNoMessages");
@@ -101,6 +109,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         setChat(loaded);
         setChatTitle(deriveTitle(file.name, t("defaultChatTitle")));
         setMeSender(pickDefaultMe(loaded.participants, counts));
+        success = true;
         return true;
       } catch (err) {
         if (err instanceof LoadChatError) {
@@ -120,7 +129,14 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         }
         return false;
       } finally {
-        setIsLoading(false);
+        if (!success) {
+          setIsLoading(false);
+          setProgress(null);
+        }
+        // On success, keep isLoading=true and progress at 100% until the
+        // chat page mounts and calls clearLoadingState(). This prevents the
+        // Dropzone from briefly flashing back to its default state between
+        // load completion and navigation.
       }
     },
     [t],
@@ -134,6 +150,13 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     setChatTitle("");
     setMeSender(null);
     setError(null);
+    setIsLoading(false);
+    setProgress(null);
+  }, []);
+
+  const clearLoadingState = useCallback(() => {
+    setIsLoading(false);
+    setProgress(null);
   }, []);
 
   return (
@@ -143,10 +166,12 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         chatTitle,
         meSender,
         isLoading,
+        progress,
         error,
         load,
         reset,
         setMeSender,
+        clearLoadingState,
       }}
     >
       {children}

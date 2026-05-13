@@ -3,16 +3,16 @@
 @tailwind utilities;
 
 :root {
-  --wa-bg: 217 219 213;
+  --wa-bg: 249 250 248;
   --wa-sidebar: 255 255 255;
-  --wa-panel: 240 242 245;
+  --wa-panel: 244 247 244;
   --wa-raised: 255 255 255;
   --wa-bubble: 255 255 255;
   --wa-bubble-out: 217 253 211;
   --wa-chat-bg: 239 234 226;
-  --wa-divider: 233 237 239;
+  --wa-divider: 228 233 230;
   --wa-text: 17 27 33;
-  --wa-text-muted: 102 119 129;
+  --wa-text-muted: 100 116 125;
   --wa-system-bubble: 255 243 196;
 }
 
@@ -71,6 +71,13 @@ body {
   height: 0;
   border-top: 8px solid rgb(var(--wa-bubble));
   border-left: 8px solid transparent;
+}
+
+/* Skip layout/paint work for messages that are off-screen.
+   contain-intrinsic-size reserves space so the scrollbar stays accurate. */
+.msg-cv {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 60px;
 }
 
 /* Custom scrollbar for chat area */

@@ -93,6 +93,64 @@ export type Dict = {
   footerTagline: string;
   openMenu: string;
   closeMenu: string;
+  scrollToBottom: string;
+  loadingFiles: string;
+  uploadHeading: string;
+  dropUnified: string;
+  privacyBadge: string;
+  languageNotice: string;
+  wrongFileType: string;
+  heroBadge: string;
+  heroAccentWord: string;
+  heroChip1: string;
+  heroChip2: string;
+  ctaBandTitle: string;
+  ctaBandLead: string;
+  ctaBandButton: string;
+  trySampleChat: string;
+  seeHowItWorks: string;
+  filterAll: string;
+  filterMedia: string;
+  filterPhoto: string;
+  filterVideo: string;
+  filterAudio: string;
+  filterDocument: string;
+  filterSticker: string;
+  filterTextOnly: string;
+  filterSearchPlaceholder: string;
+  filterSenderLabel: string;
+  filterDateFromLabel: string;
+  filterDateToLabel: string;
+  filterMediaTypeLabel: string;
+  filterClearAll: string;
+  filterShowFilters: string;
+  filterHideFilters: string;
+  filterNoMatches: string;
+  filterMatchesCount: string;
+  searchInChat: string;
+  closeSearch: string;
+  howItWorksHeading: string;
+  howItWorksLead: string;
+  homeHow1Title: string;
+  homeHow1Body: string;
+  homeHow2Title: string;
+  homeHow2Body: string;
+  homeHow3Title: string;
+  homeHow3Body: string;
+  faqHeading: string;
+  faqLead: string;
+  faq1Q: string;
+  faq1A: string;
+  faq2Q: string;
+  faq2A: string;
+  faq3Q: string;
+  faq3A: string;
+  faq4Q: string;
+  faq4A: string;
+  faq5Q: string;
+  faq5A: string;
+  faq6Q: string;
+  faq6A: string;
 };
 
 const tr: Dict = {
@@ -231,6 +289,76 @@ const tr: Dict = {
     "Tarayıcınızda çalışan, gizliliğe saygılı WhatsApp sohbet görüntüleyici.",
   openMenu: "Menüyü aç",
   closeMenu: "Menüyü kapat",
+  scrollToBottom: "En aşağı git",
+  loadingFiles: "dosya",
+  uploadHeading: "WhatsApp Dışa Aktarımını Yükle",
+  dropUnified: ".txt veya .zip dosyanızı sürükleyip bırakın ya da tıklayıp seçin",
+  privacyBadge: "%100 Gizli",
+  languageNotice:
+    "Şu anda İngilizce veya Türkçe sistem diline sahip cihazlardan yapılan dışa aktarımları destekliyoruz. Sohbet mesajlarınız herhangi bir dilde olabilir. Başka bir dışa aktarım dilini desteklememize yardımcı olmak için iletişim sayfasından bize örnek bir sohbet dosyası (.zip veya .txt) gönderin.",
+  wrongFileType: "Yalnızca .txt veya .zip dosyaları yüklenebilir.",
+  heroBadge: "Açık kaynak • Ücretsiz • Yerel",
+  heroAccentWord: "WhatsApp Sohbet",
+  heroChip1: "🔒 Cihazınızda kalır",
+  heroChip2: "✨ %100 ücretsiz",
+  ctaBandTitle: "Sohbetlerinizi görmeye hazır mısınız?",
+  ctaBandLead:
+    "Android veya iOS WhatsApp dışa aktarımınızı yükleyin, saniyeler içinde göz atmaya başlayın.",
+  ctaBandButton: "Sohbet yükle",
+  trySampleChat: "Örnek sohbeti dene",
+  seeHowItWorks: "Nasıl çalışır?",
+  filterAll: "Tümü",
+  filterMedia: "Medya",
+  filterPhoto: "Fotoğraf",
+  filterVideo: "Video",
+  filterAudio: "Ses",
+  filterDocument: "Belge",
+  filterSticker: "Çıkartma",
+  filterTextOnly: "Sadece metin",
+  filterSearchPlaceholder: "Mesajlarda ara…",
+  filterSenderLabel: "Gönderen",
+  filterDateFromLabel: "Başlangıç",
+  filterDateToLabel: "Bitiş",
+  filterMediaTypeLabel: "İçerik türü",
+  filterClearAll: "Temizle",
+  filterShowFilters: "Filtreler",
+  filterHideFilters: "Filtreleri gizle",
+  filterNoMatches: "Bu filtrelerle eşleşen mesaj yok.",
+  filterMatchesCount: "{n} sonuç",
+  searchInChat: "Sohbette ara (Ctrl+F)",
+  closeSearch: "Aramayı kapat",
+  howItWorksHeading: "Nasıl çalışır?",
+  howItWorksLead: "Üç basit adımda sohbetinizi görüntüleyin",
+  homeHow1Title: "WhatsApp'tan dışa aktarın",
+  homeHow1Body:
+    "Sohbeti açın → Menü → Daha fazla → Sohbeti dışa aktar. Medya için ZIP, sadece metin için TXT seçin.",
+  homeHow2Title: "Buraya yükleyin",
+  homeHow2Body:
+    ".txt veya .zip dosyanızı yükleme alanına sürükleyip bırakın ya da tıklayarak seçin. Android ve iOS dışa aktarımlarını destekler.",
+  homeHow3Title: "Göz atın ve arayın",
+  homeHow3Body:
+    "Sohbetiniz tüm mesajlar, medyalar ve zaman damgalarıyla anında görüntülenir. İstediğiniz anı bulmak için aramayı kullanın.",
+  faqHeading: "Sık sorulan sorular",
+  faqLead:
+    "Aklınızdaki soruların yanıtları aşağıda. Listede bulamadığınız bir konu için bizimle iletişime geçebilirsiniz.",
+  faq1Q: "Dosyalarım bir sunucuya yükleniyor mu?",
+  faq1A:
+    "Hayır. Tüm ayrıştırma ve görüntüleme tarayıcınızda gerçekleşir; .txt veya .zip dosyalarınız hiçbir sunucuya gönderilmez.",
+  faq2Q: "Hangi dışa aktarımları destekliyorsunuz?",
+  faq2A:
+    "Android ve iOS WhatsApp dışa aktarımları desteklenir. Medyasız (.txt) ve medyalı (.zip) her iki tür de açılabilir.",
+  faq3Q: "Fotoğraf, video ve sesli mesajları görüntüleyebilir miyim?",
+  faq3A:
+    "Evet. .zip dışa aktarımındaki fotoğraf, video, sticker ve sesli mesajlar sohbet baloncuklarında doğru biçimde gösterilir ve galeride toplu görüntülenebilir.",
+  faq4Q: "Silinen mesajlar görünür mü?",
+  faq4A:
+    "Dışa aktarımda 'Bu mesaj silindi' olarak işaretlenmiş mesajlar, ban ikonu ve italik soluk gri stiliyle olduğu gibi gösterilir.",
+  faq5Q: "Çevrimdışı çalışıyor mu?",
+  faq5A:
+    "Sayfa bir kez yüklendikten sonra tüm sohbet görüntüleme işlemi çevrimdışı çalışır. İlk yükleme için yalnızca FontAwesome ikon dosyaları gibi statik varlıklar gerekir.",
+  faq6Q: "Açık kaynak mı? Ücretsiz mi?",
+  faq6A:
+    "Evet. WhatsApp Sohbet Görüntüleyici açık kaynaklıdır ve ücretsiz olarak kullanılabilir. Geri bildirim ve katkılar değerlidir.",
 };
 
 const en: Dict = {
@@ -367,6 +495,76 @@ const en: Dict = {
     "A privacy-respecting WhatsApp chat viewer that runs entirely in your browser.",
   openMenu: "Open menu",
   closeMenu: "Close menu",
+  scrollToBottom: "Scroll to bottom",
+  loadingFiles: "files",
+  uploadHeading: "Upload WhatsApp Export",
+  dropUnified: "Drag & drop your .txt or .zip file, or click to browse",
+  privacyBadge: "100% Private",
+  languageNotice:
+    "Currently supporting exports from devices with English or Turkish system language. Chat messages can be in any language. To help us support your language, please submit a sample chat export (.zip or .txt) via the contact page.",
+  wrongFileType: "Only .txt or .zip files can be uploaded.",
+  heroBadge: "Open source • Free • Local",
+  heroAccentWord: "WhatsApp Chat",
+  heroChip1: "🔒 Stays on your device",
+  heroChip2: "✨ 100% free",
+  ctaBandTitle: "Ready to view your exported chats?",
+  ctaBandLead:
+    "Upload your Android or iOS WhatsApp export and start browsing in seconds.",
+  ctaBandButton: "Upload Chat",
+  trySampleChat: "Try sample chat",
+  seeHowItWorks: "See how it works",
+  filterAll: "All",
+  filterMedia: "Media",
+  filterPhoto: "Photo",
+  filterVideo: "Video",
+  filterAudio: "Audio",
+  filterDocument: "Document",
+  filterSticker: "Sticker",
+  filterTextOnly: "Text only",
+  filterSearchPlaceholder: "Search messages…",
+  filterSenderLabel: "Sender",
+  filterDateFromLabel: "From",
+  filterDateToLabel: "To",
+  filterMediaTypeLabel: "Content type",
+  filterClearAll: "Clear",
+  filterShowFilters: "Filters",
+  filterHideFilters: "Hide filters",
+  filterNoMatches: "No messages match these filters.",
+  filterMatchesCount: "{n} matches",
+  searchInChat: "Search in chat (Ctrl+F)",
+  closeSearch: "Close search",
+  howItWorksHeading: "How It Works",
+  howItWorksLead: "Three Simple Steps",
+  homeHow1Title: "Export from WhatsApp",
+  homeHow1Body:
+    "Open any chat → Menu → More → Export Chat. Choose “Include media” for a ZIP file or “Without media” for a text file.",
+  homeHow2Title: "Upload here",
+  homeHow2Body:
+    "Drag & drop your .txt or .zip file onto the upload area, or click to browse. Supports Android & iOS exports.",
+  homeHow3Title: "Browse & Search",
+  homeHow3Body:
+    "Your chat is instantly rendered with all messages, media, and timestamps. Use search to find any moment.",
+  faqHeading: "Frequently Asked Questions",
+  faqLead:
+    "Answers to common questions. Don't see yours? Reach out via the contact page.",
+  faq1Q: "Are my files uploaded to a server?",
+  faq1A:
+    "No. All parsing and rendering happens in your browser; your .txt or .zip files are never sent to any server.",
+  faq2Q: "Which exports do you support?",
+  faq2A:
+    "Both Android and iOS WhatsApp exports work. Plain text (.txt) and media-rich (.zip) exports are both supported.",
+  faq3Q: "Can I view photos, videos and voice notes?",
+  faq3A:
+    "Yes. Photos, videos, stickers and voice messages from a .zip export render properly inside chat bubbles and can be browsed in the built-in gallery.",
+  faq4Q: "Are deleted messages shown?",
+  faq4A:
+    "Messages marked as “This message was deleted” in the export are rendered as-is with a ban icon and italic muted-gray styling.",
+  faq5Q: "Does it work offline?",
+  faq5A:
+    "After the page is loaded once, all chat-viewing happens locally and works offline. The initial load only requires static assets like FontAwesome icons.",
+  faq6Q: "Is it open source? Is it free?",
+  faq6A:
+    "Yes. WhatsApp Chat Viewer is open source and free to use. Feedback and contributions are very welcome.",
 };
 
 export const TRANSLATIONS: Record<Locale, Dict> = { tr, en };

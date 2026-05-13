@@ -38,13 +38,19 @@ function mimeFor(filename: string): string {
   return MIME_BY_EXT[ext] || "application/octet-stream";
 }
 
+export type LoadProgress = { done: number; total: number };
+export type LoadProgressCallback = (p: LoadProgress) => void;
+
 export async function loadFromTxt(file: File): Promise<LoadedChat> {
   const content = await file.text();
   const parsed = parseWhatsAppText(content);
   return { ...parsed, mediaBlobUrls: [], hasMedia: false };
 }
 
-export async function loadFromZip(file: File): Promise<LoadedChat> {
+export async function loadFromZip(
+  file: File,
+  onProgress?: LoadProgressCallback,
+): Promise<LoadedChat> {
   const zip = await JSZip.loadAsync(file);
 
   // Find the chat .txt file
@@ -88,6 +94,8 @@ export async function loadFromZip(file: File): Promise<LoadedChat> {
     mediaEntries.push({ filename, entry });
   });
 
+  onProgress?.({ done: 0, total: mediaEntries.length });
+  let completed = 0;
   await Promise.all(
     mediaEntries.map(async ({ filename, entry }) => {
       const blob = await entry.async("blob");
@@ -96,6 +104,8 @@ export async function loadFromZip(file: File): Promise<LoadedChat> {
       filenameToUrl.set(filename, url);
       lowerToUrl.set(filename.toLowerCase(), url);
       blobUrls.push(url);
+      completed++;
+      onProgress?.({ done: completed, total: mediaEntries.length });
     }),
   );
 

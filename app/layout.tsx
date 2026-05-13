@@ -27,12 +27,22 @@ export default function RootLayout({
           crossOrigin="anonymous"
           referrerPolicy="no-referrer"
         />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        />
       </head>
       <body className="font-sans antialiased">
         <ThemeProvider>
           <I18nProvider>
             <ChatProvider>
-              <div className="min-h-screen flex flex-col bg-wa-bg">
+              <div className="min-h-screen flex flex-col bg-wa-panel">
                 <SiteHeader />
                 <main className="flex-1 flex flex-col">{children}</main>
                 <SiteFooter />

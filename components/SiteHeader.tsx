@@ -4,13 +4,22 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useI18n } from "./I18nProvider";
+import { useChat } from "./ChatProvider";
 import LanguageSwitcher from "./LanguageSwitcher";
 import ThemeSwitcher from "./ThemeSwitcher";
 
 export default function SiteHeader() {
   const { t } = useI18n();
   const pathname = usePathname();
+  const { chat } = useChat();
   const [open, setOpen] = useState(false);
+
+  // Hide the site header on /chats when a chat is loaded — the chat view has
+  // its own sidebar header (with a Home link) and we want a fully immersive
+  // full-bleed viewport for the chat itself.
+  const onChatsRoute =
+    pathname === "/chats" || pathname?.startsWith("/chats/");
+  if (onChatsRoute && chat) return null;
 
   const links: { href: string; label: string }[] = [
     { href: "/", label: t("navHome") },
@@ -23,8 +32,13 @@ export default function SiteHeader() {
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname?.startsWith(href);
 
+  const isChats = pathname === "/chats" || pathname?.startsWith("/chats/");
+  const stickyClass = isChats ? "" : "sticky top-0";
+
   return (
-    <header className="bg-wa-panel border-b border-wa-divider sticky top-0 z-30">
+    <header
+      className={`bg-wa-panel/80 supports-[backdrop-filter]:bg-wa-panel/70 backdrop-blur-md border-b border-wa-divider/60 z-30 ${stickyClass}`}
+    >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-2.5 flex items-center gap-4">
         <Link
           href="/"

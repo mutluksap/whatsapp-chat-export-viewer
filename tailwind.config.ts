@@ -30,6 +30,7 @@ const config: Config = {
       },
       fontFamily: {
         sans: [
+          "Inter",
           "-apple-system",
           "BlinkMacSystemFont",
           "Segoe UI",
@@ -42,6 +43,25 @@ const config: Config = {
           "Fira Sans",
           "sans-serif",
         ],
+      },
+      keyframes: {
+        "fade-in-up": {
+          "0%": { opacity: "0", transform: "translateY(16px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        "fade-in": {
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" },
+        },
+        "soft-pulse": {
+          "0%,100%": { transform: "scale(1)", opacity: "1" },
+          "50%": { transform: "scale(1.05)", opacity: "0.95" },
+        },
+      },
+      animation: {
+        "fade-in-up": "fade-in-up 0.6s cubic-bezier(0.22,1,0.36,1) both",
+        "fade-in": "fade-in 0.5s ease-out both",
+        "soft-pulse": "soft-pulse 2.5s ease-in-out infinite",
       },
     },
   },

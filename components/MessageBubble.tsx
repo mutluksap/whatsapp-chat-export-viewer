@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { Message } from "@/lib/types";
 import { colorFromName, formatTime } from "@/lib/format";
 import { useI18n } from "./I18nProvider";
@@ -69,6 +70,8 @@ function AttachmentView({
         <img
           src={att.url}
           alt={att.filename}
+          loading="lazy"
+          decoding="async"
           className={
             isSticker
               ? "max-w-[160px] max-h-[160px] cursor-zoom-in"
@@ -84,7 +87,7 @@ function AttachmentView({
       <div className="relative">
         <video
           src={att.url}
-          preload="metadata"
+          preload="none"
           className="rounded-md max-w-full max-h-[360px] cursor-zoom-in block"
           onClick={(e) => {
             e.preventDefault();
@@ -113,7 +116,7 @@ function AttachmentView({
       <audio
         src={att.url}
         controls
-        preload="metadata"
+        preload="none"
         className="max-w-full"
       />
     );
@@ -140,7 +143,7 @@ type Props = {
   onMediaClick?: (messageId: string) => void;
 };
 
-export default function MessageBubble({
+function MessageBubble({
   message,
   isOutgoing,
   showSender,
@@ -151,7 +154,7 @@ export default function MessageBubble({
 
   if (message.isSystem) {
     return (
-      <div className="flex justify-center my-2 px-4">
+      <div className="flex justify-center my-2 px-4 msg-cv">
         <div className="bg-wa-system-bubble/90 text-wa-text/80 text-xs px-3 py-1.5 rounded-md shadow-sm max-w-md text-center">
           {message.text}
         </div>
@@ -168,7 +171,7 @@ export default function MessageBubble({
 
   return (
     <div
-      className={`flex px-3 sm:px-6 ${isOutgoing ? "justify-end" : "justify-start"}`}
+      className={`msg-cv flex px-3 sm:px-6 ${isOutgoing ? "justify-end" : "justify-start"}`}
     >
       <div
         className={`relative ${bubbleCls} rounded-lg shadow-sm px-2.5 py-1.5 max-w-[85%] sm:max-w-[65%] ${
@@ -223,3 +226,5 @@ export default function MessageBubble({
     </div>
   );
 }
+
+export default memo(MessageBubble);
