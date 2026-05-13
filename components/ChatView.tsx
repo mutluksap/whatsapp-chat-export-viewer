@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
 import type { LoadedChat, Message } from "@/lib/types";
+import { useChat } from "./ChatProvider";
+import Dropzone from "./Dropzone";
 import Avatar from "./Avatar";
 import MessageBubble from "./MessageBubble";
 import Lightbox, { type LightboxItem, type LightboxStart } from "./Lightbox";
@@ -22,7 +24,7 @@ import {
 import { useI18n } from "./I18nProvider";
 
 type Props = {
-  chat: LoadedChat;
+  chat: LoadedChat | null;
   chatTitle: string;
   meSender: string | null;
   onMeChange: (name: string) => void;
@@ -37,9 +39,34 @@ export default function ChatView({
   onReset,
 }: Props) {
   const { t, dict } = useI18n();
+  const { load, isLoading, progress, error: loadError } = useChat();
   const [showSidebar, setShowSidebar] = useState(false);
   const [lightboxStart, setLightboxStart] = useState<LightboxStart | null>(
     null,
+  );
+  const uploadInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handlePickFile = useCallback(() => {
+    uploadInputRef.current?.click();
+  }, []);
+
+  const handleUploadChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      e.target.value = "";
+      if (!file) return;
+      const lower = file.name.toLowerCase();
+      if (lower.endsWith(".txt")) load(file, "text");
+      else if (lower.endsWith(".zip")) load(file, "zip");
+    },
+    [load],
+  );
+
+  const handleDropFile = useCallback(
+    (file: File, mode: "text" | "zip") => {
+      load(file, mode);
+    },
+    [load],
   );
   const virtuosoRef = useRef<VirtuosoHandle | null>(null);
   const [atBottom, setAtBottom] = useState(true);
@@ -70,7 +97,8 @@ export default function ChatView({
   }, []);
 
   const filteredMessages = useMemo(() => {
-    if (!filtersActive) return chat.messages;
+    const allMessages = chat?.messages ?? [];
+    if (!filtersActive) return allMessages;
     const q = filters.query.trim().toLowerCase();
     const from = filters.dateFrom
       ? new Date(filters.dateFrom + "T00:00:00")
@@ -80,7 +108,7 @@ export default function ChatView({
       : null;
     const senderSet = new Set(filters.senders);
     const mediaSet = new Set(filters.mediaTypes);
-    return chat.messages.filter((m) => {
+    return allMessages.filter((m) => {
       if (m.isSystem) return false;
       if (senderSet.size > 0 && (!m.sender || !senderSet.has(m.sender)))
         return false;
@@ -101,7 +129,7 @@ export default function ChatView({
       }
       return true;
     });
-  }, [chat.messages, filters, filtersActive]);
+  }, [chat?.messages, filters, filtersActive]);
 
   const scrollToBottom = useCallback(() => {
     virtuosoRef.current?.scrollToIndex({
@@ -111,8 +139,10 @@ export default function ChatView({
     });
   }, []);
 
-  const isGroup = chat.participants.length > 2;
-  const otherParticipants = chat.participants.filter((p) => p !== meSender);
+  const isGroup = (chat?.participants?.length ?? 0) > 2;
+  const otherParticipants = (chat?.participants ?? []).filter(
+    (p) => p !== meSender,
+  );
   const headerName =
     chatTitle ||
     (otherParticipants.length === 1
@@ -123,7 +153,7 @@ export default function ChatView({
   const { lightboxItems, msgIdToMediaIndex } = useMemo(() => {
     const items: LightboxItem[] = [];
     const map = new Map<string, number>();
-    for (const msg of chat.messages) {
+    for (const msg of chat?.messages ?? []) {
       const att = msg.attachment;
       if (
         att?.url &&
@@ -138,7 +168,7 @@ export default function ChatView({
       }
     }
     return { lightboxItems: items, msgIdToMediaIndex: map };
-  }, [chat.messages]);
+  }, [chat?.messages]);
 
   const handleMediaClick = useCallback(
     (messageId: string) => {
@@ -152,7 +182,9 @@ export default function ChatView({
     if (lightboxItems.length > 0) setLightboxStart({ gallery: true });
   }, [lightboxItems.length]);
 
-  const lastMessage = chat.messages[chat.messages.length - 1];
+  const lastMessage = chat
+    ? chat.messages[chat.messages.length - 1]
+    : undefined;
   const lastMessagePreview = lastMessage
     ? lastMessage.attachment
       ? lastMessage.attachment.type === "image"
@@ -281,13 +313,6 @@ export default function ChatView({
               <div className="flex items-center gap-1.5">
                 <ThemeSwitcher />
                 <LanguageSwitcher />
-                <button
-                  onClick={onReset}
-                  className="text-xs text-wa-green-dark dark:text-wa-green hover:underline ml-1"
-                  type="button"
-                >
-                  {t("loadNewFile")}
-                </button>
               </div>
             </div>
 
@@ -304,57 +329,98 @@ export default function ChatView({
             </div>
 
             <div className="flex-1 overflow-y-auto">
-              <button
-                type="button"
-                onClick={openGallery}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-wa-panel hover:bg-wa-raised transition text-left"
-                title={t("openGallery")}
-              >
-                <Avatar name={headerName} size={48} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <div className="font-medium truncate">{headerName}</div>
-                    {lastMessage?.timestamp && (
-                      <div className="text-[11px] text-wa-text-muted shrink-0 ml-2">
-                        {formatTime(lastMessage.timestamp)}
+              {chat ? (
+                <div className="group relative">
+                  <button
+                    type="button"
+                    onClick={openGallery}
+                    className="w-full flex items-center gap-3 px-4 py-3 bg-wa-panel hover:bg-wa-raised transition text-left"
+                    title={t("openGallery")}
+                  >
+                    <Avatar name={headerName} size={48} />
+                    <div className="flex-1 min-w-0 pr-9">
+                      <div className="flex items-center justify-between">
+                        <div className="font-medium truncate">
+                          {headerName}
+                        </div>
+                        {lastMessage?.timestamp && (
+                          <div className="text-[11px] text-wa-text-muted shrink-0 ml-2">
+                            {formatTime(lastMessage.timestamp)}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                  <div className="text-sm text-wa-text-muted truncate">
-                    {lastMessagePreview}
-                  </div>
+                      <div className="text-sm text-wa-text-muted truncate">
+                        {lastMessagePreview}
+                      </div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onReset}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-red-500/10 hover:bg-red-500 text-red-600 hover:text-white opacity-0 group-hover:opacity-100 focus:opacity-100 transition flex items-center justify-center"
+                    title={t("deleteChat")}
+                    aria-label={t("deleteChat")}
+                  >
+                    <i className="fa-solid fa-trash text-xs" aria-hidden />
+                  </button>
                 </div>
-              </button>
+              ) : (
+                <div className="px-4 py-8 text-center text-sm text-wa-text-muted">
+                  {t("noChats")}
+                </div>
+              )}
             </div>
 
-            <div className="px-4 py-3 border-t border-wa-divider">
-              <div className="text-xs font-semibold text-wa-text-muted mb-2 uppercase tracking-wide">
-                {t("pickMe")}
+            {chat && (
+              <div className="px-4 py-3 border-t border-wa-divider">
+                <div className="text-xs font-semibold text-wa-text-muted mb-2 uppercase tracking-wide">
+                  {t("pickMe")}
+                </div>
+                <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                  {chat.participants.length === 0 && (
+                    <div className="text-xs text-wa-text-muted">
+                      {t("noParticipants")}
+                    </div>
+                  )}
+                  {chat.participants.map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => onMeChange(p)}
+                      className={`w-full text-left text-sm px-2 py-1 rounded ${
+                        meSender === p
+                          ? "bg-wa-green-dark text-white"
+                          : "hover:bg-wa-raised text-wa-text"
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[11px] text-wa-text-muted mt-2 leading-relaxed">
+                  {t("pickMeHint")}
+                </p>
               </div>
-              <div className="space-y-1.5 max-h-40 overflow-y-auto">
-                {chat.participants.length === 0 && (
-                  <div className="text-xs text-wa-text-muted">
-                    {t("noParticipants")}
-                  </div>
-                )}
-                {chat.participants.map((p) => (
-                  <button
-                    key={p}
-                    type="button"
-                    onClick={() => onMeChange(p)}
-                    className={`w-full text-left text-sm px-2 py-1 rounded ${
-                      meSender === p
-                        ? "bg-wa-green-dark text-white"
-                        : "hover:bg-wa-raised text-wa-text"
-                    }`}
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
-              <p className="text-[11px] text-wa-text-muted mt-2 leading-relaxed">
-                {t("pickMeHint")}
-              </p>
+            )}
+
+            {/* Bottom-left: Upload new chat */}
+            <div className="px-3 py-3 border-t border-wa-divider">
+              <input
+                ref={uploadInputRef}
+                type="file"
+                accept=".txt,.zip,text/plain,application/zip"
+                className="hidden"
+                onChange={handleUploadChange}
+              />
+              <button
+                type="button"
+                onClick={handlePickFile}
+                className="w-full inline-flex items-center justify-center gap-2 bg-wa-green-dark hover:bg-wa-green text-white text-sm font-medium px-3 py-2.5 rounded-lg shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+                disabled={isLoading}
+              >
+                <i className="fa-solid fa-cloud-arrow-up" aria-hidden />
+                {t("uploadNewChat")}
+              </button>
             </div>
 
             <button
@@ -369,6 +435,19 @@ export default function ChatView({
 
           {/* Chat panel */}
           <section className="flex-1 flex flex-col min-w-0 min-h-0">
+            {!chat ? (
+              <div className="flex-1 w-full flex items-center justify-center p-4 wa-chat-bg">
+                <Dropzone
+                  variant="card"
+                  showHeading
+                  onFileSelected={handleDropFile}
+                  isLoading={isLoading}
+                  progress={progress}
+                  error={loadError}
+                />
+              </div>
+            ) : (
+              <>
             <header className="bg-wa-panel px-3 sm:px-4 py-2 flex items-center gap-3 border-l border-wa-divider">
               <button
                 type="button"
@@ -413,31 +492,6 @@ export default function ChatView({
                   aria-hidden
                 />
               </button>
-              {lightboxItems.length > 0 && (
-                <button
-                  type="button"
-                  onClick={openGallery}
-                  className="hidden md:flex items-center gap-1.5 text-sm text-wa-text-muted hover:text-wa-text px-2.5 py-1.5 rounded hover:bg-black/5 dark:hover:bg-white/5"
-                  title={t("openGallery")}
-                  aria-label={t("openGallery")}
-                >
-                  <i
-                    className="fa-solid fa-images text-base"
-                    aria-hidden
-                  />
-                  <span className="hidden lg:inline">
-                    {t("gallery")}
-                  </span>
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={onReset}
-                className="hidden md:flex items-center gap-1.5 text-sm text-wa-text-muted hover:text-wa-text px-2.5 py-1.5 rounded hover:bg-black/5 dark:hover:bg-white/5"
-              >
-                <i className="fa-solid fa-plus text-base" aria-hidden />
-                {t("newFile")}
-              </button>
             </header>
 
             {searchOpen && (
@@ -456,7 +510,8 @@ export default function ChatView({
                 <div className="absolute inset-0 flex items-center justify-center text-wa-text-muted text-sm px-6 text-center">
                   {filtersActive ? t("filterNoMatches") : t("noMessages")}
                 </div>
-              ) : (
+              ) : null}
+              {items.length > 0 && (
                 <Virtuoso
                   ref={virtuosoRef}
                   totalCount={items.length}
@@ -522,6 +577,8 @@ export default function ChatView({
                 aria-hidden
               />
             </footer>
+              </>
+            )}
           </section>
         </div>
       </div>

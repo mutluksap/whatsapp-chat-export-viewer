@@ -16,8 +16,8 @@ function StepCard({ step, index }: { step: Step; index: number }) {
         <div className="absolute inset-0 flex items-center justify-center text-white">
           <i className={`fa-solid ${step.icon} text-xl`} aria-hidden />
         </div>
-        <div className="absolute -top-2 -right-2 min-w-[26px] h-[26px] px-1.5 rounded-full bg-wa-sidebar text-wa-green-dark dark:text-wa-green font-bold text-[11px] flex items-center justify-center shadow-md ring-2 ring-wa-green-dark/15 tabular-nums">
-          {String(index + 1).padStart(2, "0")}
+        <div className="absolute -top-2 -right-2 min-w-[26px] h-[26px] px-1.5 rounded-full bg-wa-sidebar text-wa-green-dark dark:text-wa-green font-bold text-xs flex items-center justify-center shadow-md ring-2 ring-wa-green-dark/15 tabular-nums">
+          {index + 1}
         </div>
       </div>
       <h3 className="font-semibold text-wa-text mb-1.5 tracking-tight">

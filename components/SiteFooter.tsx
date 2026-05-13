@@ -3,16 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useI18n } from "./I18nProvider";
-import { useChat } from "./ChatProvider";
 
 export default function SiteFooter() {
   const { t } = useI18n();
   const pathname = usePathname();
-  const { chat } = useChat();
 
   const onChatsRoute =
     pathname === "/chats" || pathname?.startsWith("/chats/");
-  if (onChatsRoute && chat) return null;
+  // /chats always renders edge-to-edge — no global footer there.
+  if (onChatsRoute) return null;
 
   return (
     <footer className="relative bg-wa-panel border-t border-wa-divider/60">

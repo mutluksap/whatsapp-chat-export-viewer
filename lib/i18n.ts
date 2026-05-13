@@ -129,6 +129,9 @@ export type Dict = {
   filterMatchesCount: string;
   searchInChat: string;
   closeSearch: string;
+  deleteChat: string;
+  noChats: string;
+  uploadNewChat: string;
   howItWorksHeading: string;
   howItWorksLead: string;
   homeHow1Title: string;
@@ -327,6 +330,9 @@ const tr: Dict = {
   filterMatchesCount: "{n} sonuç",
   searchInChat: "Sohbette ara (Ctrl+F)",
   closeSearch: "Aramayı kapat",
+  deleteChat: "Sohbeti sil",
+  noChats: "Henüz sohbet yok",
+  uploadNewChat: "Yeni sohbet yükle",
   howItWorksHeading: "Nasıl çalışır?",
   howItWorksLead: "Üç basit adımda sohbetinizi görüntüleyin",
   homeHow1Title: "WhatsApp'tan dışa aktarın",
@@ -533,6 +539,9 @@ const en: Dict = {
   filterMatchesCount: "{n} matches",
   searchInChat: "Search in chat (Ctrl+F)",
   closeSearch: "Close search",
+  deleteChat: "Delete chat",
+  noChats: "No chats yet",
+  uploadNewChat: "Upload new chat",
   howItWorksHeading: "How It Works",
   howItWorksLead: "Three Simple Steps",
   homeHow1Title: "Export from WhatsApp",
