@@ -209,10 +209,13 @@ export default function MessageBubble({
         <div className="float-right text-[10px] text-wa-text-muted ml-2 mt-0.5 select-none">
           {message.timestamp ? formatTime(message.timestamp) : ""}
           {isOutgoing && !message.isDeleted && (
-            <i
-              className="fa-solid fa-check-double inline-block ml-1 text-[11px] text-sky-500 align-middle -mt-px"
+            <span
+              className="inline-flex items-center ml-1 text-sky-500 align-middle -mt-px"
               aria-hidden
-            />
+            >
+              <i className="fa-solid fa-check text-[11px] leading-none" />
+              <i className="fa-solid fa-check text-[11px] leading-none -ml-[5px]" />
+            </span>
           )}
         </div>
         <div className="clear-both" />
