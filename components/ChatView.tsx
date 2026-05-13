@@ -69,6 +69,7 @@ export default function ChatView({
     [load],
   );
   const virtuosoRef = useRef<VirtuosoHandle | null>(null);
+  const virtuosoScrollerRef = useRef<HTMLElement | Window | null>(null);
   const [atBottom, setAtBottom] = useState(true);
   const [sidebarQuery, setSidebarQuery] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -145,11 +146,33 @@ export default function ChatView({
   }, [chat?.messages, filters.senders, filters.dateFrom, filters.dateTo, filters.mediaTypes, hasNonQueryFilters]);
 
   const scrollToBottom = useCallback(() => {
-    virtuosoRef.current?.scrollToIndex({
-      index: "LAST",
-      behavior: "smooth",
-      align: "end",
-    });
+    const el = virtuosoScrollerRef.current as HTMLElement | null;
+    if (!el) {
+      virtuosoRef.current?.scrollToIndex({
+        index: "LAST",
+        behavior: "auto",
+        align: "end",
+      });
+      return;
+    }
+    // Custom rAF easeOut scroll. Re-targets each frame so newly measured items
+    // (which grow scrollHeight) don't leave us short like native smooth-scroll
+    // does on a virtualized list. ~350ms feels fast yet smooth.
+    const startTop = el.scrollTop;
+    const startTime = performance.now();
+    const duration = 350;
+    const step = (now: number) => {
+      const t = Math.min(1, (now - startTime) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      const target = el.scrollHeight - el.clientHeight;
+      el.scrollTop = startTop + (target - startTop) * eased;
+      if (t < 1) {
+        requestAnimationFrame(step);
+      } else {
+        el.scrollTop = el.scrollHeight - el.clientHeight;
+      }
+    };
+    requestAnimationFrame(step);
   }, []);
 
   const isGroup = (chat?.participants?.length ?? 0) > 2;
@@ -284,9 +307,10 @@ export default function ChatView({
     for (let i = 0; i < items.length; i++) {
       const it = items[i];
       if (it.type !== "message") continue;
+      // Match against message text only — attachment filenames (e.g. IMG-0022.jpg)
+      // would otherwise pollute results when searching numbers like "22".
       const tx = (it.message.text || "").toLowerCase();
-      const fn = (it.message.attachment?.filename || "").toLowerCase();
-      if (tx.includes(q) || fn.includes(q)) out.push(i);
+      if (tx.includes(q)) out.push(i);
     }
     return out;
   }, [items, filters.query]);
@@ -306,7 +330,7 @@ export default function ChatView({
     virtuosoRef.current?.scrollToIndex({
       index: idx,
       align: "center",
-      behavior: "smooth",
+      behavior: "auto",
     });
   }, [matchPos, matchIndices]);
 
@@ -352,10 +376,15 @@ export default function ChatView({
     <div className="h-dvh flex flex-col w-full bg-wa-bg overflow-hidden">
       <div className="w-full flex-1 min-h-0 flex flex-col">
         <div className="overflow-hidden flex flex-1 min-h-0">
-          {/* Sidebar */}
+          {/* Sidebar — on mobile, show by default whenever no chat is loaded
+              so the user always has access to navigation (back to home) and
+              the upload action. When a chat is loaded, hide unless the user
+              opens it via the hamburger in the chat header. */}
           <aside
             className={`${
-              showSidebar ? "absolute inset-0 z-20 flex" : "hidden"
+              showSidebar || !chat
+                ? "absolute inset-0 z-20 flex"
+                : "hidden"
             } md:relative md:flex md:w-[380px] md:shrink-0 flex-col bg-wa-sidebar border-r border-wa-divider overflow-hidden`}
           >
             <div className="bg-wa-panel px-4 py-2.5 flex items-center justify-between gap-2">
@@ -486,12 +515,35 @@ export default function ChatView({
                   </div>
                 )
               ) : !chat ? (
-                <div className="px-4 py-8 text-center text-sm text-wa-text-muted">
-                  {t("noChats")}
+                <div className="px-6 py-12 flex flex-col items-center text-center">
+                  <span className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-wa-green-dark/15 to-emerald-400/10 dark:from-white/10 dark:to-emerald-300/10 ring-1 ring-inset ring-wa-green-dark/10 dark:ring-white/10 flex items-center justify-center mb-3">
+                    <i
+                      className="fa-regular fa-comments text-2xl text-wa-green-dark dark:text-wa-green"
+                      aria-hidden
+                    />
+                    <span className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-wa-sidebar border-2 border-wa-panel flex items-center justify-center text-wa-text-muted">
+                      <i
+                        className="fa-solid fa-plus text-[10px]"
+                        aria-hidden
+                      />
+                    </span>
+                  </span>
+                  <p className="text-sm font-medium text-wa-text">
+                    {t("noChats")}
+                  </p>
+                  <p className="text-xs text-wa-text-muted mt-1 max-w-[200px]">
+                    {t("dropUnified")}
+                  </p>
                 </div>
               ) : (
-                <div className="px-4 py-8 text-center text-sm text-wa-text-muted">
-                  {t("noMatchingChats")}
+                <div className="px-6 py-12 flex flex-col items-center text-center text-wa-text-muted">
+                  <span className="w-12 h-12 rounded-full bg-wa-panel border border-wa-divider/60 flex items-center justify-center mb-2">
+                    <i
+                      className="fa-solid fa-magnifying-glass text-sm"
+                      aria-hidden
+                    />
+                  </span>
+                  <p className="text-sm">{t("noMatchingChats")}</p>
                 </div>
               )}
             </div>
@@ -540,22 +592,38 @@ export default function ChatView({
               <button
                 type="button"
                 onClick={handlePickFile}
-                className="w-full inline-flex items-center justify-center gap-2 bg-wa-green-dark hover:bg-wa-green text-white text-sm font-medium px-3 py-2.5 rounded-lg shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
                 disabled={isLoading}
+                className="w-full inline-flex items-center justify-center gap-2 bg-wa-green-dark hover:bg-wa-green text-white text-sm font-medium px-3 py-2.5 rounded-lg shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 disabled:bg-wa-text-muted/40 disabled:hover:bg-wa-text-muted/40 disabled:hover:shadow-sm disabled:hover:translate-y-0 disabled:cursor-not-allowed"
               >
-                <i className="fa-solid fa-cloud-arrow-up" aria-hidden />
-                {t("uploadNewChat")}
+                {isLoading ? (
+                  <>
+                    <i
+                      className="fa-solid fa-circle-notch animate-spin"
+                      aria-hidden
+                    />
+                    {progress && progress.total > 0
+                      ? `${progress.done} / ${progress.total}`
+                      : t("processing")}
+                  </>
+                ) : (
+                  <>
+                    <i className="fa-solid fa-cloud-arrow-up" aria-hidden />
+                    {t("uploadNewChat")}
+                  </>
+                )}
               </button>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setShowSidebar(false)}
-              className="md:hidden absolute top-2 right-2 p-2 text-white bg-black/30 rounded-full"
-              aria-label={t("close")}
-            >
-              <i className="fa-solid fa-xmark text-base" aria-hidden />
-            </button>
+            {chat && (
+              <button
+                type="button"
+                onClick={() => setShowSidebar(false)}
+                className="md:hidden absolute top-2 right-2 p-2 text-white bg-black/30 rounded-full"
+                aria-label={t("close")}
+              >
+                <i className="fa-solid fa-xmark text-base" aria-hidden />
+              </button>
+            )}
           </aside>
 
           {/* Chat panel */}
@@ -652,6 +720,9 @@ export default function ChatView({
               {items.length > 0 && (
                 <Virtuoso
                   ref={virtuosoRef}
+                  scrollerRef={(ref) => {
+                    virtuosoScrollerRef.current = ref;
+                  }}
                   totalCount={items.length}
                   followOutput
                   atBottomStateChange={setAtBottom}
@@ -700,23 +771,6 @@ export default function ChatView({
               </button>
             </div>
 
-            <footer className="bg-wa-panel px-3 sm:px-4 py-2.5 flex items-center gap-3">
-              <i
-                className="fa-regular fa-face-smile text-xl text-wa-text-muted"
-                aria-hidden
-              />
-              <i
-                className="fa-solid fa-paperclip text-xl text-wa-text-muted"
-                aria-hidden
-              />
-              <div className="flex-1 bg-wa-raised rounded-full px-4 py-2 text-sm text-wa-text-muted select-none">
-                {t("footerHint")}
-              </div>
-              <i
-                className="fa-solid fa-microphone text-xl text-wa-text-muted"
-                aria-hidden
-              />
-            </footer>
               </>
             )}
           </section>

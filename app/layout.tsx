@@ -7,9 +7,35 @@ import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 
 export const metadata: Metadata = {
-  title: "WhatsApp Chat Export Viewer",
+  title: {
+    default: "WA Viewer — WhatsApp Chat Export Viewer",
+    template: "WA Viewer — %s",
+  },
   description:
-    "View WhatsApp chat exports (.txt or .zip) in a WhatsApp Web–style interface.",
+    "Open exported WhatsApp .txt or .zip chats in a familiar WhatsApp Web–style interface. Free, private, browser-based — your files never leave your device.",
+  applicationName: "WA Viewer",
+  keywords: [
+    "WhatsApp chat viewer",
+    "WhatsApp export viewer",
+    "view WhatsApp chat online",
+    "WhatsApp txt viewer",
+    "WhatsApp zip viewer",
+    "chat history viewer",
+  ],
+  authors: [{ name: "WA Viewer" }],
+  openGraph: {
+    type: "website",
+    siteName: "WA Viewer",
+    title: "WA Viewer — WhatsApp Chat Export Viewer",
+    description:
+      "Open exported WhatsApp chats in a WhatsApp Web–style viewer. Private and browser-based.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "WA Viewer — WhatsApp Chat Export Viewer",
+    description:
+      "Open exported WhatsApp chats in a WhatsApp Web–style viewer. Private and browser-based.",
+  },
 };
 
 export default function RootLayout({

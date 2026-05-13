@@ -340,17 +340,23 @@ export default function Home() {
             <p className="text-wa-text-muted mt-2">{t("howItWorksLead")}</p>
           </div>
 
-          {/* Mobile: stacked with chevron-down between */}
+          {/* Mobile: stacked with vertical circular arrow divider */}
           <ol className="sm:hidden grid grid-cols-1 gap-4">
             {steps.map((s, i) => (
               <div key={s.n}>
                 <StepCard step={s} index={i} />
                 {i < steps.length - 1 && (
-                  <div className="flex justify-center py-2">
-                    <i
-                      className="fa-solid fa-chevron-down text-wa-text-muted/50"
-                      aria-hidden
-                    />
+                  <div
+                    className="flex justify-center py-3"
+                    aria-hidden
+                  >
+                    <div className="flex flex-col items-center gap-1.5 text-wa-green-dark/70 dark:text-wa-green/70">
+                      <span className="w-px h-3 bg-gradient-to-b from-wa-green-dark/0 to-wa-green-dark/40 dark:from-wa-green/0 dark:to-wa-green/40" />
+                      <span className="w-9 h-9 rounded-full bg-wa-sidebar border border-wa-divider/70 shadow-sm flex items-center justify-center">
+                        <i className="fa-solid fa-arrow-down text-xs" />
+                      </span>
+                      <span className="w-px h-3 bg-gradient-to-t from-wa-green-dark/0 to-wa-green-dark/40 dark:from-wa-green/0 dark:to-wa-green/40" />
+                    </div>
                   </div>
                 )}
               </div>
