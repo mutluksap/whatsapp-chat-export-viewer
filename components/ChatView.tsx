@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import type { LoadedChat } from "@/lib/types";
 import Avatar from "./Avatar";
 import MessageBubble from "./MessageBubble";
-import Lightbox, { type LightboxItem } from "./Lightbox";
+import Lightbox, { type LightboxItem, type LightboxStart } from "./Lightbox";
 import LanguageSwitcher from "./LanguageSwitcher";
 import ThemeSwitcher from "./ThemeSwitcher";
 import {
@@ -31,7 +31,9 @@ export default function ChatView({
 }: Props) {
   const { t, dict } = useI18n();
   const [showSidebar, setShowSidebar] = useState(false);
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [lightboxStart, setLightboxStart] = useState<LightboxStart | null>(
+    null,
+  );
 
   const isGroup = chat.participants.length > 2;
   const otherParticipants = chat.participants.filter((p) => p !== meSender);
@@ -65,10 +67,14 @@ export default function ChatView({
   const handleMediaClick = useCallback(
     (messageId: string) => {
       const idx = msgIdToMediaIndex.get(messageId);
-      if (idx !== undefined) setLightboxIndex(idx);
+      if (idx !== undefined) setLightboxStart({ index: idx });
     },
     [msgIdToMediaIndex],
   );
+
+  const openGallery = useCallback(() => {
+    if (lightboxItems.length > 0) setLightboxStart({ gallery: true });
+  }, [lightboxItems.length]);
 
   const lastMessage = chat.messages[chat.messages.length - 1];
   const lastMessagePreview = lastMessage
@@ -176,20 +182,10 @@ export default function ChatView({
 
             <div className="px-3 py-2 bg-wa-sidebar">
               <div className="bg-wa-panel rounded-lg px-3 py-1.5 flex items-center gap-2">
-                <svg
-                  viewBox="0 0 24 24"
-                  className="w-4 h-4 text-wa-text-muted"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
+                <i
+                  className="fa-solid fa-magnifying-glass text-xs text-wa-text-muted"
                   aria-hidden
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="m21 21-4.3-4.3M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16Z"
-                  />
-                </svg>
+                />
                 <span className="text-sm text-wa-text-muted">
                   {t("searchChats")}
                 </span>
@@ -197,7 +193,12 @@ export default function ChatView({
             </div>
 
             <div className="flex-1 overflow-y-auto">
-              <div className="flex items-center gap-3 px-4 py-3 bg-wa-panel cursor-default">
+              <button
+                type="button"
+                onClick={openGallery}
+                className="w-full flex items-center gap-3 px-4 py-3 bg-wa-panel hover:bg-wa-raised transition text-left"
+                title={t("openGallery")}
+              >
                 <Avatar name={headerName} size={48} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
@@ -212,7 +213,7 @@ export default function ChatView({
                     {lastMessagePreview}
                   </div>
                 </div>
-              </div>
+              </button>
             </div>
 
             <div className="px-4 py-3 border-t border-wa-divider">
@@ -251,20 +252,7 @@ export default function ChatView({
               className="md:hidden absolute top-2 right-2 p-2 text-white bg-black/30 rounded-full"
               aria-label={t("close")}
             >
-              <svg
-                viewBox="0 0 24 24"
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                aria-hidden
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6 18 18 6M6 6l12 12"
-                />
-              </svg>
+              <i className="fa-solid fa-xmark text-base" aria-hidden />
             </button>
           </aside>
 
@@ -277,49 +265,54 @@ export default function ChatView({
                 className="md:hidden p-1.5 -ml-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5"
                 aria-label={t("menu")}
               >
-                <svg
-                  viewBox="0 0 24 24"
-                  className="w-5 h-5 text-wa-text"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
+                <i
+                  className="fa-solid fa-bars text-base text-wa-text"
                   aria-hidden
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
-                  />
-                </svg>
+                />
               </button>
-              <Avatar name={headerName} size={40} />
-              <div className="flex-1 min-w-0">
-                <div className="font-medium truncate">{headerName}</div>
-                <div className="text-xs text-wa-text-muted truncate">
-                  {chat.participants.length > 0
-                    ? t("participantCount", { n: chat.participants.length })
-                    : ""}
+              <button
+                type="button"
+                onClick={openGallery}
+                disabled={lightboxItems.length === 0}
+                className="flex-1 min-w-0 flex items-center gap-3 -mx-1 px-1 py-0.5 rounded text-left hover:bg-black/5 dark:hover:bg-white/5 disabled:hover:bg-transparent disabled:cursor-default"
+                title={
+                  lightboxItems.length > 0 ? t("openGallery") : undefined
+                }
+                aria-label={t("openGallery")}
+              >
+                <Avatar name={headerName} size={40} />
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium truncate">{headerName}</div>
+                  <div className="text-xs text-wa-text-muted truncate">
+                    {chat.participants.length > 0
+                      ? t("participantCount", { n: chat.participants.length })
+                      : ""}
+                  </div>
                 </div>
-              </div>
+              </button>
+              {lightboxItems.length > 0 && (
+                <button
+                  type="button"
+                  onClick={openGallery}
+                  className="hidden md:flex items-center gap-1.5 text-sm text-wa-text-muted hover:text-wa-text px-2.5 py-1.5 rounded hover:bg-black/5 dark:hover:bg-white/5"
+                  title={t("openGallery")}
+                  aria-label={t("openGallery")}
+                >
+                  <i
+                    className="fa-solid fa-images text-base"
+                    aria-hidden
+                  />
+                  <span className="hidden lg:inline">
+                    {t("gallery")}
+                  </span>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={onReset}
                 className="hidden md:flex items-center gap-1.5 text-sm text-wa-text-muted hover:text-wa-text px-2.5 py-1.5 rounded hover:bg-black/5 dark:hover:bg-white/5"
               >
-                <svg
-                  viewBox="0 0 24 24"
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  aria-hidden
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 4.5v15m7.5-7.5h-15"
-                  />
-                </svg>
+                <i className="fa-solid fa-plus text-base" aria-hidden />
                 {t("newFile")}
               </button>
             </header>
@@ -334,62 +327,31 @@ export default function ChatView({
             </div>
 
             <footer className="bg-wa-panel px-3 sm:px-4 py-2.5 flex items-center gap-3">
-              <svg
-                viewBox="0 0 24 24"
-                className="w-6 h-6 text-wa-text-muted"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.7"
+              <i
+                className="fa-regular fa-face-smile text-xl text-wa-text-muted"
                 aria-hidden
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15.182 15.182a4.5 4.5 0 0 1-6.364 0M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Z"
-                />
-              </svg>
-              <svg
-                viewBox="0 0 24 24"
-                className="w-6 h-6 text-wa-text-muted"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.7"
+              />
+              <i
+                className="fa-solid fa-paperclip text-xl text-wa-text-muted"
                 aria-hidden
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="m18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3 3 0 1 1 19.5 7.372L8.552 18.32m.009-.01-.01.01m5.699-9.941-7.81 7.81a1.5 1.5 0 0 0 2.122 2.122l7.81-7.81"
-                />
-              </svg>
+              />
               <div className="flex-1 bg-wa-raised rounded-full px-4 py-2 text-sm text-wa-text-muted select-none">
                 {t("footerHint")}
               </div>
-              <svg
-                viewBox="0 0 24 24"
-                className="w-6 h-6 text-wa-text-muted"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.7"
+              <i
+                className="fa-solid fa-microphone text-xl text-wa-text-muted"
                 aria-hidden
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z"
-                />
-              </svg>
+              />
             </footer>
           </section>
         </div>
       </div>
 
-      {lightboxIndex !== null && lightboxItems.length > 0 && (
+      {lightboxStart !== null && lightboxItems.length > 0 && (
         <Lightbox
           items={lightboxItems}
-          index={lightboxIndex}
-          onClose={() => setLightboxIndex(null)}
-          onIndexChange={setLightboxIndex}
+          start={lightboxStart}
+          onClose={() => setLightboxStart(null)}
         />
       )}
     </div>

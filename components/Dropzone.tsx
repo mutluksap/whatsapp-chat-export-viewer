@@ -46,14 +46,10 @@ export default function Dropzone({
 
         <div className="flex flex-col items-center text-center mb-6">
           <div className="w-14 h-14 rounded-full bg-wa-green-dark flex items-center justify-center mb-4">
-            <svg
-              viewBox="0 0 32 32"
-              className="w-8 h-8 text-white"
-              fill="currentColor"
+            <i
+              className="fa-brands fa-whatsapp text-white text-3xl"
               aria-hidden
-            >
-              <path d="M16 .395C7.488.395.605 7.28.605 15.791c0 2.804.737 5.547 2.137 7.96L.5 31.605l8.06-2.118a15.34 15.34 0 0 0 7.44 1.892h.006c8.51 0 15.394-6.884 15.394-15.394C31.4 7.28 24.51.395 16 .395zm0 28.18a12.78 12.78 0 0 1-6.514-1.788l-.467-.278-4.78 1.256 1.276-4.66-.305-.482a12.74 12.74 0 0 1-1.95-6.832c0-7.06 5.74-12.802 12.8-12.802 7.06 0 12.8 5.742 12.8 12.802 0 7.06-5.74 12.784-12.86 12.784zm7.018-9.58c-.384-.192-2.27-1.12-2.622-1.248-.352-.128-.608-.192-.864.192-.256.384-.992 1.248-1.216 1.504-.224.256-.448.288-.832.096-.384-.192-1.62-.598-3.086-1.904-1.14-1.018-1.91-2.272-2.134-2.656-.224-.384-.024-.592.168-.784.172-.172.384-.448.576-.672.192-.224.256-.384.384-.64.128-.256.064-.48-.032-.672-.096-.192-.864-2.08-1.184-2.848-.312-.752-.628-.65-.864-.66-.224-.012-.48-.014-.736-.014-.256 0-.672.096-1.024.48-.352.384-1.344 1.312-1.344 3.2 0 1.888 1.376 3.712 1.568 3.968.192.256 2.704 4.128 6.56 5.788.916.396 1.632.632 2.19.808.92.293 1.756.252 2.418.152.738-.11 2.27-.928 2.592-1.824.32-.896.32-1.664.224-1.824-.096-.16-.352-.256-.736-.448z" />
-            </svg>
+            />
           </div>
           <h1 className="text-2xl sm:text-3xl font-semibold text-wa-text">
             {t("appTitle")}
@@ -122,20 +118,10 @@ export default function Dropzone({
             }}
           />
 
-          <svg
-            viewBox="0 0 24 24"
-            className="w-12 h-12 mx-auto mb-3 text-wa-text-muted"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
+          <i
+            className="fa-solid fa-cloud-arrow-up text-4xl mx-auto mb-3 block text-wa-text-muted"
             aria-hidden
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"
-            />
-          </svg>
+          />
 
           <p className="text-wa-text font-medium">
             {isLoading

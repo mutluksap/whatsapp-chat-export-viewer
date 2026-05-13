@@ -135,6 +135,35 @@ export function isMediaOmittedLine(text: string): boolean {
   );
 }
 
+// WhatsApp shows a fixed sentinel string where a message was deleted. Strings
+// vary by locale and by whether it was you or the other party. Match either form.
+const DELETED_PATTERNS: RegExp[] = [
+  /^this message was deleted\.?$/i,
+  /^you deleted this message\.?$/i,
+  /^bu mesaj silindi\.?$/i,
+  /^bu mesajı sildiniz\.?$/i,
+  /^se eliminó este mensaje\.?$/i,
+  /^eliminaste este mensaje\.?$/i,
+  /^ce message a été supprimé\.?$/i,
+  /^vous avez supprimé ce message\.?$/i,
+  /^diese nachricht wurde gelöscht\.?$/i,
+  /^du hast diese nachricht gelöscht\.?$/i,
+  /^questo messaggio è stato eliminato\.?$/i,
+  /^hai eliminato questo messaggio\.?$/i,
+  /^esta mensagem foi apagada\.?$/i,
+  /^você apagou esta mensagem\.?$/i,
+  /^сообщение удалено\.?$/i,
+  /^вы удалили это сообщение\.?$/i,
+  /^このメッセージは削除されました。?$/,
+  /^このメッセージを削除しました。?$/,
+];
+
+export function isDeletedMessageText(text: string): boolean {
+  const t = text.trim();
+  if (!t) return false;
+  return DELETED_PATTERNS.some((re) => re.test(t));
+}
+
 export function parseWhatsAppText(content: string): ParsedChat {
   const text = content.replace(/^﻿/, "").replace(BIDI_RE, "");
   const lines = text.split(/\r?\n/);
@@ -210,6 +239,9 @@ export function parseWhatsAppText(content: string): ParsedChat {
       }
     }
 
+    const isDeleted =
+      !!sender && !attachment && isDeletedMessageText(messageText);
+
     messages.push({
       id: `msg-${idCounter++}`,
       timestamp: date,
@@ -217,6 +249,7 @@ export function parseWhatsAppText(content: string): ParsedChat {
       text: messageText,
       attachment,
       isSystem: !sender,
+      isDeleted,
     });
   }
 

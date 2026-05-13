@@ -47,20 +47,7 @@ function AttachmentView({
   if (!att.url) {
     return (
       <div className="flex items-center gap-2 py-2 px-3 rounded bg-black/5 dark:bg-white/10 text-sm text-wa-text-muted">
-        <svg
-          viewBox="0 0 24 24"
-          className="w-5 h-5 shrink-0"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.7"
-          aria-hidden
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="m18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3 3 0 1 1 19.5 7.372L8.552 18.32m.009-.01-.01.01m5.699-9.941-7.81 7.81a1.5 1.5 0 0 0 2.122 2.122l7.81-7.81"
-          />
-        </svg>
+        <i className="fa-solid fa-paperclip text-base shrink-0" aria-hidden />
         <span>{att.filename ? att.filename : t("mediaNotIncluded")}</span>
       </div>
     );
@@ -111,14 +98,10 @@ function AttachmentView({
           aria-label="Play"
         >
           <span className="w-14 h-14 rounded-full bg-black/55 flex items-center justify-center">
-            <svg
-              viewBox="0 0 24 24"
-              className="w-7 h-7 text-white ml-1"
-              fill="currentColor"
+            <i
+              className="fa-solid fa-play text-white text-xl ml-1"
               aria-hidden
-            >
-              <path d="M8 5v14l11-7z" />
-            </svg>
+            />
           </span>
         </button>
       </div>
@@ -143,20 +126,7 @@ function AttachmentView({
       className="flex items-center gap-2 py-2 px-3 rounded bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 text-sm text-wa-text"
       onClick={(e) => e.stopPropagation()}
     >
-      <svg
-        viewBox="0 0 24 24"
-        className="w-5 h-5 shrink-0"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        aria-hidden
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m5.25 11.25-2.625 2.625m0 0L8.25 13.5m2.625 2.625V9.75M6.75 21.75h10.5a2.25 2.25 0 0 0 2.25-2.25V9.75a9 9 0 0 0-9-9H6.75A2.25 2.25 0 0 0 4.5 3v16.5a2.25 2.25 0 0 0 2.25 2.25Z"
-        />
-      </svg>
+      <i className="fa-solid fa-file-lines text-base shrink-0" aria-hidden />
       <span className="truncate">{att.filename}</span>
     </a>
   );
@@ -177,6 +147,8 @@ export default function MessageBubble({
   isGroup,
   onMediaClick,
 }: Props) {
+  const { t } = useI18n();
+
   if (message.isSystem) {
     return (
       <div className="flex justify-center my-2 px-4">
@@ -218,7 +190,17 @@ export default function MessageBubble({
           </div>
         )}
 
-        {message.text && (
+        {message.isDeleted && (
+          <div className="text-sm leading-snug whitespace-pre-wrap pr-12 italic text-wa-text-muted flex items-center gap-1.5">
+            <i
+              className="fa-solid fa-ban shrink-0 text-[13px]"
+              aria-hidden
+            />
+            <span>{t("messageDeleted")}</span>
+          </div>
+        )}
+
+        {message.text && !message.isDeleted && (
           <div className="text-sm leading-snug whitespace-pre-wrap pr-12">
             {renderText(message.text)}
           </div>
@@ -226,15 +208,11 @@ export default function MessageBubble({
 
         <div className="float-right text-[10px] text-wa-text-muted ml-2 mt-0.5 select-none">
           {message.timestamp ? formatTime(message.timestamp) : ""}
-          {isOutgoing && (
-            <svg
-              viewBox="0 0 16 11"
-              className="inline-block ml-1 -mb-px w-4 h-3 text-sky-500"
-              fill="currentColor"
+          {isOutgoing && !message.isDeleted && (
+            <i
+              className="fa-solid fa-check-double inline-block ml-1 text-[11px] text-sky-500 align-middle -mt-px"
               aria-hidden
-            >
-              <path d="M11.071.653a.457.457 0 0 0-.304-.102.493.493 0 0 0-.381.178l-6.19 7.636-2.405-2.272a.463.463 0 0 0-.336-.148.51.51 0 0 0-.355.148L.36 6.864a.504.504 0 0 0 0 .713l3.643 3.464a.49.49 0 0 0 .343.13.435.435 0 0 0 .333-.148L15.62 1.768a.51.51 0 0 0 .15-.36.45.45 0 0 0-.149-.351L14.516.045a.45.45 0 0 0-.345-.16.502.502 0 0 0-.367.165L4.456 8.815 11.07.653Z" />
-            </svg>
+            />
           )}
         </div>
         <div className="clear-both" />

@@ -19,6 +19,7 @@ export type Message = {
   text: string;
   attachment?: Attachment;
   isSystem: boolean;
+  isDeleted?: boolean;
 };
 
 export type ParsedChat = {

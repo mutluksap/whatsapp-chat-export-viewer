@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useI18n } from "./I18nProvider";
 
 export type LightboxItem = {
@@ -9,30 +9,36 @@ export type LightboxItem = {
   filename: string;
 };
 
+export type LightboxStart = { index: number } | { gallery: true };
+
+type Mode = "single" | "gallery";
+
 type Props = {
   items: LightboxItem[];
-  index: number;
+  start: LightboxStart;
   onClose: () => void;
-  onIndexChange: (i: number) => void;
 };
 
-export default function Lightbox({
-  items,
-  index,
-  onClose,
-  onIndexChange,
-}: Props) {
+export default function Lightbox({ items, start, onClose }: Props) {
   const { t } = useI18n();
-  const item = items[index];
+  const [mode, setMode] = useState<Mode>(
+    "gallery" in start ? "gallery" : "single",
+  );
+  const [index, setIndex] = useState<number>(
+    "index" in start ? start.index : 0,
+  );
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         onClose();
-      } else if (e.key === "ArrowLeft" && index > 0) {
-        onIndexChange(index - 1);
+        return;
+      }
+      if (mode !== "single") return;
+      if (e.key === "ArrowLeft" && index > 0) {
+        setIndex(index - 1);
       } else if (e.key === "ArrowRight" && index < items.length - 1) {
-        onIndexChange(index + 1);
+        setIndex(index + 1);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -42,8 +48,87 @@ export default function Lightbox({
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = prevOverflow;
     };
-  }, [index, items.length, onClose, onIndexChange]);
+  }, [mode, index, items.length, onClose]);
 
+  if (mode === "gallery") {
+    return (
+      <div
+        className="fixed inset-0 z-50 bg-black/95 flex flex-col"
+        role="dialog"
+        aria-modal="true"
+      >
+        <div className="flex items-center justify-between px-4 py-3 text-white border-b border-white/10">
+          <div className="text-sm font-medium">
+            {t("gallery")}
+            <span className="ml-2 text-white/60 tabular-nums">
+              ({items.length})
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-2 rounded-full hover:bg-white/15"
+            aria-label={t("close")}
+          >
+            <i className="fa-solid fa-xmark text-xl" aria-hidden />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4">
+          {items.length === 0 ? (
+            <div className="h-full flex items-center justify-center text-white/70 text-sm">
+              {t("noMedia")}
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2">
+              {items.map((it, i) => (
+                <button
+                  key={`${it.url}-${i}`}
+                  type="button"
+                  onClick={() => {
+                    setIndex(i);
+                    setMode("single");
+                  }}
+                  className="relative aspect-square overflow-hidden rounded-md bg-white/5 hover:ring-2 hover:ring-wa-green focus:outline-none focus:ring-2 focus:ring-wa-green group"
+                  title={it.filename}
+                  aria-label={it.filename}
+                >
+                  {it.type === "video" ? (
+                    <>
+                      <video
+                        src={it.url}
+                        preload="metadata"
+                        className="w-full h-full object-cover"
+                        muted
+                        playsInline
+                      />
+                      <span className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/20 transition">
+                        <span className="w-10 h-10 rounded-full bg-black/55 flex items-center justify-center">
+                          <i
+                            className="fa-solid fa-play text-white text-sm ml-0.5"
+                            aria-hidden
+                          />
+                        </span>
+                      </span>
+                    </>
+                  ) : (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={it.url}
+                      alt={it.filename}
+                      loading="lazy"
+                      className="w-full h-full object-cover"
+                    />
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  const item = items[index];
   if (!item) return null;
 
   const canPrev = index > 0;
@@ -58,34 +143,34 @@ export default function Lightbox({
     >
       {/* Top bar */}
       <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 py-3 text-white pointer-events-none">
-        <div className="text-sm truncate max-w-[60%] pointer-events-auto">
+        <div className="text-sm truncate max-w-[50%] pointer-events-auto">
           {item.filename}
         </div>
-        <div className="flex items-center gap-3 pointer-events-auto">
+        <div className="flex items-center gap-2 pointer-events-auto">
           <div className="text-sm text-white/80 tabular-nums">
             {index + 1} / {items.length}
           </div>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setMode("gallery");
+            }}
+            className="p-2 rounded-full hover:bg-white/15"
+            aria-label={t("gallery")}
+            title={t("gallery")}
+          >
+            <i className="fa-solid fa-images text-lg" aria-hidden />
+          </button>
           <a
             href={item.url}
             download={item.filename}
             onClick={(e) => e.stopPropagation()}
             className="p-2 rounded-full hover:bg-white/15"
             aria-label="Download"
+            title="Download"
           >
-            <svg
-              viewBox="0 0 24 24"
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              aria-hidden
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"
-              />
-            </svg>
+            <i className="fa-solid fa-download text-lg" aria-hidden />
           </a>
           <button
             type="button"
@@ -96,20 +181,7 @@ export default function Lightbox({
             className="p-2 rounded-full hover:bg-white/15"
             aria-label={t("close")}
           >
-            <svg
-              viewBox="0 0 24 24"
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              aria-hidden
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M6 18 18 6M6 6l12 12"
-              />
-            </svg>
+            <i className="fa-solid fa-xmark text-xl" aria-hidden />
           </button>
         </div>
       </div>
@@ -120,25 +192,12 @@ export default function Lightbox({
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            onIndexChange(index - 1);
+            setIndex(index - 1);
           }}
           className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white"
           aria-label={t("previous")}
         >
-          <svg
-            viewBox="0 0 24 24"
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            aria-hidden
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="m15.75 19.5-7.5-7.5 7.5-7.5"
-            />
-          </svg>
+          <i className="fa-solid fa-chevron-left text-lg" aria-hidden />
         </button>
       )}
 
@@ -148,25 +207,12 @@ export default function Lightbox({
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            onIndexChange(index + 1);
+            setIndex(index + 1);
           }}
           className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white"
           aria-label={t("next")}
         >
-          <svg
-            viewBox="0 0 24 24"
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            aria-hidden
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="m8.25 4.5 7.5 7.5-7.5 7.5"
-            />
-          </svg>
+          <i className="fa-solid fa-chevron-right text-lg" aria-hidden />
         </button>
       )}
 

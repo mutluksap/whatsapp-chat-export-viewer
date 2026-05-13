@@ -49,6 +49,10 @@ export type Dict = {
   language: string;
   menu: string;
   defaultChatTitle: string;
+  gallery: string;
+  openGallery: string;
+  noMedia: string;
+  messageDeleted: string;
 };
 
 const tr: Dict = {
@@ -128,6 +132,10 @@ const tr: Dict = {
   language: "Dil",
   menu: "Menü",
   defaultChatTitle: "Sohbet",
+  gallery: "Galeri",
+  openGallery: "Galeriyi aç",
+  noMedia: "Bu sohbette medya yok",
+  messageDeleted: "Bu mesaj silindi.",
 };
 
 const en: Dict = {
@@ -205,6 +213,10 @@ const en: Dict = {
   language: "Language",
   menu: "Menu",
   defaultChatTitle: "Chat",
+  gallery: "Gallery",
+  openGallery: "Open gallery",
+  noMedia: "No media in this chat",
+  messageDeleted: "This message was deleted.",
 };
 
 export const TRANSLATIONS: Record<Locale, Dict> = { tr, en };
