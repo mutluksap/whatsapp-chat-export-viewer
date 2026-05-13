@@ -42,8 +42,15 @@ type Props = {
   onChange: (v: ChatFiltersValue) => void;
   participants: string[];
   matchCount: number;
+  /** Total number of in-chat search hits (independent of filter results). */
+  searchMatchCount?: number;
+  /** Current position within search hits (0-based). */
+  searchMatchIndex?: number;
+  onPrevMatch?: () => void;
+  onNextMatch?: () => void;
   onClose?: () => void;
-  autoFocus?: boolean;
+  /** Becomes true when the filter panel is open. Toggling this re-focuses the search input. */
+  isOpen?: boolean;
 };
 
 export default function ChatFilters({
@@ -51,18 +58,32 @@ export default function ChatFilters({
   onChange,
   participants,
   matchCount,
+  searchMatchCount = 0,
+  searchMatchIndex = 0,
+  onPrevMatch,
+  onNextMatch,
   onClose,
-  autoFocus,
+  isOpen,
 }: Props) {
   const { t } = useI18n();
   const [expanded, setExpanded] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    if (autoFocus) inputRef.current?.focus();
-  }, [autoFocus]);
+    if (isOpen) {
+      // Wait a frame so the open transition starts before focusing,
+      // otherwise the focus ring jumps before the panel slides in.
+      const id = requestAnimationFrame(() => inputRef.current?.focus());
+      return () => cancelAnimationFrame(id);
+    }
+  }, [isOpen]);
 
   const active = hasActiveFilters(value);
+  const hasNonQueryFilters =
+    value.senders.length > 0 ||
+    !!value.dateFrom ||
+    !!value.dateTo ||
+    value.mediaTypes.length > 0;
 
   const mediaTypes: { key: MediaFilter; label: string; icon: string }[] = [
     { key: "image", label: t("filterPhoto"), icon: "fa-image" },
@@ -115,18 +136,51 @@ export default function ChatFilters({
             type="text"
             value={value.query}
             onChange={(e) => onChange({ ...value, query: e.target.value })}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                (e.shiftKey ? onPrevMatch : onNextMatch)?.();
+              }
+            }}
             placeholder={t("filterSearchPlaceholder")}
             className="flex-1 min-w-0 bg-transparent outline-none text-sm text-wa-text placeholder:text-wa-text-muted"
           />
           {value.query && (
-            <button
-              type="button"
-              onClick={() => onChange({ ...value, query: "" })}
-              className="text-wa-text-muted hover:text-wa-text shrink-0"
-              aria-label={t("close")}
-            >
-              <i className="fa-solid fa-xmark text-xs" aria-hidden />
-            </button>
+            <>
+              <span className="text-[11px] text-wa-text-muted tabular-nums shrink-0 select-none">
+                {searchMatchCount > 0
+                  ? `${searchMatchIndex + 1} / ${searchMatchCount}`
+                  : t("noMatches")}
+              </span>
+              <button
+                type="button"
+                onClick={onPrevMatch}
+                disabled={searchMatchCount === 0}
+                className="shrink-0 w-6 h-6 rounded-full text-wa-text-muted hover:text-wa-text hover:bg-black/5 dark:hover:bg-white/5 flex items-center justify-center transition disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-wa-text-muted"
+                aria-label={t("prevMatch")}
+                title={t("prevMatch")}
+              >
+                <i className="fa-solid fa-chevron-up text-[10px]" aria-hidden />
+              </button>
+              <button
+                type="button"
+                onClick={onNextMatch}
+                disabled={searchMatchCount === 0}
+                className="shrink-0 w-6 h-6 rounded-full text-wa-text-muted hover:text-wa-text hover:bg-black/5 dark:hover:bg-white/5 flex items-center justify-center transition disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-wa-text-muted"
+                aria-label={t("nextMatch")}
+                title={t("nextMatch")}
+              >
+                <i className="fa-solid fa-chevron-down text-[10px]" aria-hidden />
+              </button>
+              <button
+                type="button"
+                onClick={() => onChange({ ...value, query: "" })}
+                className="text-wa-text-muted hover:text-wa-text shrink-0"
+                aria-label={t("close")}
+              >
+                <i className="fa-solid fa-xmark text-xs" aria-hidden />
+              </button>
+            </>
           )}
         </div>
         <button
@@ -159,7 +213,7 @@ export default function ChatFilters({
         )}
       </div>
 
-      {active && (
+      {hasNonQueryFilters && (
         <div className="px-3 sm:px-4 pb-2 text-xs text-wa-text-muted tabular-nums">
           {t("filterMatchesCount", { n: String(matchCount) })}
         </div>

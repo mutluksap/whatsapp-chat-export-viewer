@@ -5,8 +5,36 @@ import { useI18n } from "./I18nProvider";
 
 const URL_RE = /(https?:\/\/[^\s]+)/g;
 
-function renderText(text: string) {
+function highlightQuery(text: string, query: string): React.ReactNode[] {
+  if (!query) return [text];
+  const q = query.toLowerCase();
+  const lower = text.toLowerCase();
+  const out: React.ReactNode[] = [];
+  let i = 0;
+  let keyN = 0;
+  while (i < text.length) {
+    const idx = lower.indexOf(q, i);
+    if (idx === -1) {
+      out.push(text.slice(i));
+      break;
+    }
+    if (idx > i) out.push(text.slice(i, idx));
+    out.push(
+      <mark
+        key={`m-${keyN++}`}
+        className="bg-yellow-200/80 dark:bg-yellow-500/40 text-wa-text rounded-sm px-0.5"
+      >
+        {text.slice(idx, idx + q.length)}
+      </mark>,
+    );
+    i = idx + q.length;
+  }
+  return out;
+}
+
+function renderText(text: string, query?: string) {
   if (!text) return null;
+  const q = (query || "").trim();
   return text.split("\n").map((line, lineIdx) => {
     const parts = line.split(URL_RE);
     return (
@@ -27,7 +55,7 @@ function renderText(text: string) {
               </a>
             );
           }
-          return <span key={i}>{part}</span>;
+          return <span key={i}>{q ? highlightQuery(part, q) : part}</span>;
         })}
       </span>
     );
@@ -141,6 +169,8 @@ type Props = {
   showSender: boolean;
   isGroup: boolean;
   onMediaClick?: (messageId: string) => void;
+  query?: string;
+  isActiveMatch?: boolean;
 };
 
 function MessageBubble({
@@ -149,6 +179,8 @@ function MessageBubble({
   showSender,
   isGroup,
   onMediaClick,
+  query,
+  isActiveMatch,
 }: Props) {
   const { t } = useI18n();
 
@@ -174,8 +206,12 @@ function MessageBubble({
       className={`msg-cv flex px-3 sm:px-6 ${isOutgoing ? "justify-end" : "justify-start"}`}
     >
       <div
-        className={`relative ${bubbleCls} rounded-lg shadow-sm px-2.5 py-1.5 max-w-[85%] sm:max-w-[65%] ${
+        className={`relative ${bubbleCls} rounded-lg shadow-sm px-2.5 py-1.5 max-w-[85%] sm:max-w-[65%] transition-all duration-300 ${
           showSender ? (isOutgoing ? "bubble-out mt-2" : "bubble-in mt-2") : "mt-0.5"
+        } ${
+          isActiveMatch
+            ? "ring-2 ring-wa-green-dark ring-offset-2 ring-offset-transparent shadow-md"
+            : ""
         }`}
       >
         {showSender && isGroup && !isOutgoing && message.sender && (
@@ -205,7 +241,7 @@ function MessageBubble({
 
         {message.text && !message.isDeleted && (
           <div className="text-sm leading-snug whitespace-pre-wrap pr-12">
-            {renderText(message.text)}
+            {renderText(message.text, query)}
           </div>
         )}
 

@@ -70,6 +70,9 @@ export default function ChatView({
   );
   const virtuosoRef = useRef<VirtuosoHandle | null>(null);
   const [atBottom, setAtBottom] = useState(true);
+  const [sidebarQuery, setSidebarQuery] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [matchPos, setMatchPos] = useState(0);
   const [filters, setFilters] = useState<ChatFiltersValue>(EMPTY_FILTERS);
   const filtersActive = hasActiveFilters(filters);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -96,10 +99,25 @@ export default function ChatView({
     setFilters(EMPTY_FILTERS);
   }, []);
 
+  // Reset volatile UI state whenever the loaded chat changes.
+  useEffect(() => {
+    setConfirmDelete(false);
+    setSidebarQuery("");
+    setSearchOpen(false);
+    setFilters(EMPTY_FILTERS);
+  }, [chat?.messages]);
+
+  // Filtering uses sender/date/media — but NOT the search query. The query is
+  // used for highlighting + jump-to-match navigation, not for hiding messages.
+  const hasNonQueryFilters =
+    filters.senders.length > 0 ||
+    !!filters.dateFrom ||
+    !!filters.dateTo ||
+    filters.mediaTypes.length > 0;
+
   const filteredMessages = useMemo(() => {
     const allMessages = chat?.messages ?? [];
-    if (!filtersActive) return allMessages;
-    const q = filters.query.trim().toLowerCase();
+    if (!hasNonQueryFilters) return allMessages;
     const from = filters.dateFrom
       ? new Date(filters.dateFrom + "T00:00:00")
       : null;
@@ -122,14 +140,9 @@ export default function ChatView({
           return false;
         }
       }
-      if (q) {
-        const tx = (m.text || "").toLowerCase();
-        const fn = (m.attachment?.filename || "").toLowerCase();
-        if (!tx.includes(q) && !fn.includes(q)) return false;
-      }
       return true;
     });
-  }, [chat?.messages, filters, filtersActive]);
+  }, [chat?.messages, filters.senders, filters.dateFrom, filters.dateTo, filters.mediaTypes, hasNonQueryFilters]);
 
   const scrollToBottom = useCallback(() => {
     virtuosoRef.current?.scrollToIndex({
@@ -262,6 +275,55 @@ export default function ChatView({
     return out;
   }, [filteredMessages, meSender]);
 
+  // Compute the indices (in `items`) of messages that match the search query.
+  // Used both for highlighting and for the up/down arrow navigation.
+  const matchIndices = useMemo(() => {
+    const q = filters.query.trim().toLowerCase();
+    if (!q) return [] as number[];
+    const out: number[] = [];
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      if (it.type !== "message") continue;
+      const tx = (it.message.text || "").toLowerCase();
+      const fn = (it.message.attachment?.filename || "").toLowerCase();
+      if (tx.includes(q) || fn.includes(q)) out.push(i);
+    }
+    return out;
+  }, [items, filters.query]);
+
+  // When the query changes, jump back to the first match. Other changes
+  // (matchPos navigation) keep their position.
+  useEffect(() => {
+    setMatchPos(0);
+  }, [filters.query]);
+
+  // Scroll the active match into view when matchPos or the match set changes.
+  useEffect(() => {
+    if (matchIndices.length === 0) return;
+    const safePos = Math.min(matchPos, matchIndices.length - 1);
+    const idx = matchIndices[safePos];
+    if (idx === undefined) return;
+    virtuosoRef.current?.scrollToIndex({
+      index: idx,
+      align: "center",
+      behavior: "smooth",
+    });
+  }, [matchPos, matchIndices]);
+
+  const activeMatchIndex = matchIndices.length > 0
+    ? matchIndices[Math.min(matchPos, matchIndices.length - 1)]
+    : -1;
+
+  const onPrevMatch = useCallback(() => {
+    if (matchIndices.length === 0) return;
+    setMatchPos((p) => (p - 1 + matchIndices.length) % matchIndices.length);
+  }, [matchIndices.length]);
+
+  const onNextMatch = useCallback(() => {
+    if (matchIndices.length === 0) return;
+    setMatchPos((p) => (p + 1) % matchIndices.length);
+  }, [matchIndices.length]);
+
   const renderItem = useCallback(
     (index: number, item: RenderItem) => {
       if (item.type === "separator") {
@@ -317,56 +379,119 @@ export default function ChatView({
             </div>
 
             <div className="px-3 py-2 bg-wa-sidebar">
-              <div className="bg-wa-panel rounded-lg px-3 py-1.5 flex items-center gap-2">
+              <div className="bg-wa-panel rounded-lg px-3 py-1.5 flex items-center gap-2 ring-1 ring-transparent focus-within:ring-wa-green/40 transition">
                 <i
                   className="fa-solid fa-magnifying-glass text-xs text-wa-text-muted"
                   aria-hidden
                 />
-                <span className="text-sm text-wa-text-muted">
-                  {t("searchChats")}
-                </span>
+                <input
+                  type="text"
+                  value={sidebarQuery}
+                  onChange={(e) => setSidebarQuery(e.target.value)}
+                  placeholder={t("searchChats")}
+                  className="flex-1 min-w-0 bg-transparent outline-none text-sm text-wa-text placeholder:text-wa-text-muted"
+                />
+                {sidebarQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSidebarQuery("")}
+                    className="text-wa-text-muted hover:text-wa-text shrink-0"
+                    aria-label={t("close")}
+                  >
+                    <i className="fa-solid fa-xmark text-xs" aria-hidden />
+                  </button>
+                )}
               </div>
             </div>
 
             <div className="flex-1 overflow-y-auto">
-              {chat ? (
-                <div className="group relative">
-                  <button
-                    type="button"
-                    onClick={openGallery}
-                    className="w-full flex items-center gap-3 px-4 py-3 bg-wa-panel hover:bg-wa-raised transition text-left"
-                    title={t("openGallery")}
-                  >
-                    <Avatar name={headerName} size={48} />
-                    <div className="flex-1 min-w-0 pr-9">
-                      <div className="flex items-center justify-between">
-                        <div className="font-medium truncate">
-                          {headerName}
-                        </div>
-                        {lastMessage?.timestamp && (
-                          <div className="text-[11px] text-wa-text-muted shrink-0 ml-2">
-                            {formatTime(lastMessage.timestamp)}
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-sm text-wa-text-muted truncate">
-                        {lastMessagePreview}
-                      </div>
+              {chat &&
+              (!sidebarQuery ||
+                headerName
+                  .toLowerCase()
+                  .includes(sidebarQuery.toLowerCase())) ? (
+                confirmDelete ? (
+                  <div className="px-4 py-4 bg-wa-panel/60 border-y border-wa-divider/60 animate-fade-in-up">
+                    <div className="flex items-start gap-3 mb-3">
+                      <span className="w-8 h-8 rounded-full bg-wa-green-dark/10 dark:bg-white/10 text-wa-green-dark dark:text-wa-green flex items-center justify-center shrink-0">
+                        <i
+                          className="fa-solid fa-triangle-exclamation text-xs"
+                          aria-hidden
+                        />
+                      </span>
+                      <p className="text-sm text-wa-text leading-snug">
+                        {t("confirmDeleteChat")}
+                      </p>
                     </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={onReset}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-red-500/10 hover:bg-red-500 text-red-600 hover:text-white opacity-0 group-hover:opacity-100 focus:opacity-100 transition flex items-center justify-center"
-                    title={t("deleteChat")}
-                    aria-label={t("deleteChat")}
-                  >
-                    <i className="fa-solid fa-trash text-xs" aria-hidden />
-                  </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setConfirmDelete(false);
+                          onReset();
+                        }}
+                        className="flex-1 text-sm font-medium bg-wa-green-dark hover:bg-wa-green text-white px-3 py-1.5 rounded-lg shadow-sm transition"
+                      >
+                        {t("confirmYes")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDelete(false)}
+                        className="flex-1 text-sm font-medium border border-wa-divider hover:border-wa-text-muted/40 text-wa-text px-3 py-1.5 rounded-lg transition"
+                      >
+                        {t("confirmNo")}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="group relative">
+                    <button
+                      type="button"
+                      onClick={openGallery}
+                      className="w-full flex items-center gap-3 px-4 py-3 bg-wa-panel hover:bg-wa-raised transition text-left"
+                      title={t("openGallery")}
+                    >
+                      <Avatar name={headerName} size={48} />
+                      <div className="flex-1 min-w-0 pr-8">
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium truncate">
+                            {headerName}
+                          </div>
+                          {lastMessage?.timestamp && (
+                            <div className="text-[11px] text-wa-text-muted shrink-0 ml-2">
+                              {formatTime(lastMessage.timestamp)}
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-sm text-wa-text-muted truncate">
+                          {lastMessagePreview}
+                        </div>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmDelete(true);
+                      }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full text-wa-text-muted hover:text-wa-text hover:bg-black/10 dark:hover:bg-white/10 opacity-0 group-hover:opacity-100 focus:opacity-100 transition flex items-center justify-center"
+                      title={t("deleteChat")}
+                      aria-label={t("deleteChat")}
+                    >
+                      <i
+                        className="fa-regular fa-trash-can text-xs"
+                        aria-hidden
+                      />
+                    </button>
+                  </div>
+                )
+              ) : !chat ? (
+                <div className="px-4 py-8 text-center text-sm text-wa-text-muted">
+                  {t("noChats")}
                 </div>
               ) : (
                 <div className="px-4 py-8 text-center text-sm text-wa-text-muted">
-                  {t("noChats")}
+                  {t("noMatchingChats")}
                 </div>
               )}
             </div>
@@ -494,16 +619,29 @@ export default function ChatView({
               </button>
             </header>
 
-            {searchOpen && (
-              <ChatFilters
-                value={filters}
-                onChange={setFilters}
-                participants={chat.participants}
-                matchCount={filteredMessages.length}
-                onClose={closeSearch}
-                autoFocus
-              />
-            )}
+            <div
+              className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-300 ease-out ${
+                searchOpen
+                  ? "grid-rows-[1fr] opacity-100"
+                  : "grid-rows-[0fr] opacity-0"
+              }`}
+              aria-hidden={!searchOpen}
+            >
+              <div className="min-h-0 overflow-hidden">
+                <ChatFilters
+                  value={filters}
+                  onChange={setFilters}
+                  participants={chat.participants}
+                  matchCount={filteredMessages.length}
+                  searchMatchCount={matchIndices.length}
+                  searchMatchIndex={matchPos}
+                  onPrevMatch={onPrevMatch}
+                  onNextMatch={onNextMatch}
+                  onClose={closeSearch}
+                  isOpen={searchOpen}
+                />
+              </div>
+            </div>
 
             <div className="flex-1 min-h-0 relative wa-chat-bg">
               {items.length === 0 ? (
@@ -540,6 +678,8 @@ export default function ChatView({
                         showSender={item.showSender}
                         isGroup={isGroup}
                         onMediaClick={handleMediaClick}
+                        query={filters.query}
+                        isActiveMatch={index === activeMatchIndex}
                       />
                     );
                   }}

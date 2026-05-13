@@ -130,8 +130,15 @@ export type Dict = {
   searchInChat: string;
   closeSearch: string;
   deleteChat: string;
+  confirmDeleteChat: string;
+  confirmYes: string;
+  confirmNo: string;
   noChats: string;
+  noMatchingChats: string;
   uploadNewChat: string;
+  prevMatch: string;
+  nextMatch: string;
+  noMatches: string;
   howItWorksHeading: string;
   howItWorksLead: string;
   homeHow1Title: string;
@@ -331,8 +338,15 @@ const tr: Dict = {
   searchInChat: "Sohbette ara (Ctrl+F)",
   closeSearch: "Aramayı kapat",
   deleteChat: "Sohbeti sil",
+  confirmDeleteChat: "Sohbeti silmek istediğinizden emin misiniz?",
+  confirmYes: "Evet",
+  confirmNo: "Hayır",
   noChats: "Henüz sohbet yok",
+  noMatchingChats: "Eşleşen sohbet bulunamadı",
   uploadNewChat: "Yeni sohbet yükle",
+  prevMatch: "Önceki sonuç",
+  nextMatch: "Sonraki sonuç",
+  noMatches: "Sonuç yok",
   howItWorksHeading: "Nasıl çalışır?",
   howItWorksLead: "Üç basit adımda sohbetinizi görüntüleyin",
   homeHow1Title: "WhatsApp'tan dışa aktarın",
@@ -540,8 +554,15 @@ const en: Dict = {
   searchInChat: "Search in chat (Ctrl+F)",
   closeSearch: "Close search",
   deleteChat: "Delete chat",
+  confirmDeleteChat: "Are you sure you want to delete this chat?",
+  confirmYes: "Yes",
+  confirmNo: "No",
   noChats: "No chats yet",
+  noMatchingChats: "No matching chats",
   uploadNewChat: "Upload new chat",
+  prevMatch: "Previous match",
+  nextMatch: "Next match",
+  noMatches: "No matches",
   howItWorksHeading: "How It Works",
   howItWorksLead: "Three Simple Steps",
   homeHow1Title: "Export from WhatsApp",
