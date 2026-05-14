@@ -25,20 +25,26 @@ import { useI18n } from "./I18nProvider";
 
 function chatPreviewText(
   chat: LoadedChatRecord,
-  t: (k: string) => string,
+  labels: {
+    photo: string;
+    video: string;
+    audio: string;
+    sticker: string;
+    document: string;
+  },
 ): { text: string; timestamp: Date | null } {
   const last = chat.messages[chat.messages.length - 1];
   if (!last) return { text: "", timestamp: null };
   const text = last.attachment
     ? last.attachment.type === "image"
-      ? t("photoPreview")
+      ? labels.photo
       : last.attachment.type === "video"
-        ? t("videoPreview")
+        ? labels.video
         : last.attachment.type === "audio"
-          ? t("audioPreview")
+          ? labels.audio
           : last.attachment.type === "sticker"
-            ? t("stickerPreview")
-            : t("documentPreview")
+            ? labels.sticker
+            : labels.document
     : (last.text || "").slice(0, 60);
   return { text, timestamp: last.timestamp ?? null };
 }
@@ -96,6 +102,17 @@ export default function ChatView() {
   const [searchOpen, setSearchOpen] = useState(false);
 
   const meSender = activeChat?.meSender ?? null;
+
+  const previewLabels = useMemo(
+    () => ({
+      photo: t("photoPreview"),
+      video: t("videoPreview"),
+      audio: t("audioPreview"),
+      sticker: t("stickerPreview"),
+      document: t("documentPreview"),
+    }),
+    [t],
+  );
 
   // Ctrl/Cmd+F opens the search overlay; Esc closes it. Pressing Ctrl+F again
   // also toggles it off. Native browser find is replaced with our in-chat search.
@@ -468,7 +485,7 @@ export default function ChatView() {
                 visibleChats.map((c) => {
                   const isActive = c.id === activeChatId;
                   const isConfirming = confirmDeleteId === c.id;
-                  const preview = chatPreviewText(c, t);
+                  const preview = chatPreviewText(c, previewLabels);
                   if (isConfirming) {
                     return (
                       <div
