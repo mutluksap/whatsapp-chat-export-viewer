@@ -814,18 +814,14 @@ export default function ChatView() {
                   followOutput
                   atBottomStateChange={setAtBottom}
                   atBottomThreshold={120}
-                  increaseViewportBy={{ top: 3000, bottom: 1500 }}
+                  // Larger top overscan so items entering from above are
+                  // already measured before they reach the viewport — this
+                  // is what prevents the visible "jump" on scroll-up when
+                  // an unmeasured item's actual height differs from the
+                  // `defaultItemHeight` estimate.
+                  increaseViewportBy={{ top: 6000, bottom: 1500 }}
                   defaultItemHeight={120}
                   computeItemKey={(_, item) => item.id}
-                  scrollSeekConfiguration={{
-                    enter: (v) => Math.abs(v) > 1200,
-                    exit: (v) => Math.abs(v) < 50,
-                  }}
-                  components={{
-                    ScrollSeekPlaceholder: ({ height }) => (
-                      <div style={{ height }} className="w-full" />
-                    ),
-                  }}
                   itemsRendered={() => updateTopVisibleRef.current()}
                   className="chat-scroll overscroll-none [overflow-anchor:none]"
                   style={{ position: "absolute", inset: 0 }}

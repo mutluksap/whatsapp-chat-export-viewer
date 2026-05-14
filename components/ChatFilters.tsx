@@ -278,7 +278,7 @@ export default function ChatFilters({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <label className="block min-w-0">
+            <div className="block min-w-0">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-wa-text-muted block mb-1">
                 {t("filterDateFromLabel")}
               </span>
@@ -294,7 +294,12 @@ export default function ChatFilters({
                 {value.dateFrom && (
                   <button
                     type="button"
-                    onClick={() => onChange({ ...value, dateFrom: "" })}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onChange({ ...value, dateFrom: "" });
+                    }}
                     className="shrink-0 w-8 h-8 rounded-full bg-wa-raised border border-wa-divider/60 text-wa-text-muted hover:text-wa-text hover:border-wa-text-muted/40 flex items-center justify-center transition"
                     aria-label={t("filterClearAll")}
                     title={t("filterClearAll")}
@@ -306,8 +311,8 @@ export default function ChatFilters({
                   </button>
                 )}
               </div>
-            </label>
-            <label className="block min-w-0">
+            </div>
+            <div className="block min-w-0">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-wa-text-muted block mb-1">
                 {t("filterDateToLabel")}
               </span>
@@ -323,7 +328,12 @@ export default function ChatFilters({
                 {value.dateTo && (
                   <button
                     type="button"
-                    onClick={() => onChange({ ...value, dateTo: "" })}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onChange({ ...value, dateTo: "" });
+                    }}
                     className="shrink-0 w-8 h-8 rounded-full bg-wa-raised border border-wa-divider/60 text-wa-text-muted hover:text-wa-text hover:border-wa-text-muted/40 flex items-center justify-center transition"
                     aria-label={t("filterClearAll")}
                     title={t("filterClearAll")}
@@ -335,7 +345,7 @@ export default function ChatFilters({
                   </button>
                 )}
               </div>
-            </label>
+            </div>
           </div>
         </div>
       )}
