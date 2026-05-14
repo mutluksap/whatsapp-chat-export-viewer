@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
-import type { LoadedChat, Message } from "@/lib/types";
-import { useChat } from "./ChatProvider";
+import type { Message } from "@/lib/types";
+import { useChat, type LoadedChatRecord } from "./ChatProvider";
 import Dropzone from "./Dropzone";
 import Avatar from "./Avatar";
 import MessageBubble from "./MessageBubble";
@@ -23,23 +23,40 @@ import {
 } from "@/lib/format";
 import { useI18n } from "./I18nProvider";
 
-type Props = {
-  chat: LoadedChat | null;
-  chatTitle: string;
-  meSender: string | null;
-  onMeChange: (name: string) => void;
-  onReset: () => void;
-};
+function chatPreviewText(
+  chat: LoadedChatRecord,
+  t: (k: string) => string,
+): { text: string; timestamp: Date | null } {
+  const last = chat.messages[chat.messages.length - 1];
+  if (!last) return { text: "", timestamp: null };
+  const text = last.attachment
+    ? last.attachment.type === "image"
+      ? t("photoPreview")
+      : last.attachment.type === "video"
+        ? t("videoPreview")
+        : last.attachment.type === "audio"
+          ? t("audioPreview")
+          : last.attachment.type === "sticker"
+            ? t("stickerPreview")
+            : t("documentPreview")
+    : (last.text || "").slice(0, 60);
+  return { text, timestamp: last.timestamp ?? null };
+}
 
-export default function ChatView({
-  chat,
-  chatTitle,
-  meSender,
-  onMeChange,
-  onReset,
-}: Props) {
+export default function ChatView() {
   const { t, dict } = useI18n();
-  const { load, isLoading, progress, error: loadError } = useChat();
+  const {
+    chats,
+    activeChat,
+    activeChatId,
+    selectChat,
+    deleteChat,
+    setMeSender,
+    load,
+    isLoading,
+    progress,
+    error: loadError,
+  } = useChat();
   const [showSidebar, setShowSidebar] = useState(false);
   const [lightboxStart, setLightboxStart] = useState<LightboxStart | null>(
     null,
@@ -72,11 +89,13 @@ export default function ChatView({
   const virtuosoScrollerRef = useRef<HTMLElement | Window | null>(null);
   const [atBottom, setAtBottom] = useState(true);
   const [sidebarQuery, setSidebarQuery] = useState("");
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [matchPos, setMatchPos] = useState(0);
   const [filters, setFilters] = useState<ChatFiltersValue>(EMPTY_FILTERS);
   const filtersActive = hasActiveFilters(filters);
   const [searchOpen, setSearchOpen] = useState(false);
+
+  const meSender = activeChat?.meSender ?? null;
 
   // Ctrl/Cmd+F opens the search overlay; Esc closes it. Pressing Ctrl+F again
   // also toggles it off. Native browser find is replaced with our in-chat search.
@@ -100,13 +119,12 @@ export default function ChatView({
     setFilters(EMPTY_FILTERS);
   }, []);
 
-  // Reset volatile UI state whenever the loaded chat changes.
+  // Reset volatile UI state whenever the active chat changes.
   useEffect(() => {
-    setConfirmDelete(false);
-    setSidebarQuery("");
     setSearchOpen(false);
     setFilters(EMPTY_FILTERS);
-  }, [chat?.messages]);
+    setMatchPos(0);
+  }, [activeChatId]);
 
   // Filtering uses sender/date/media — but NOT the search query. The query is
   // used for highlighting + jump-to-match navigation, not for hiding messages.
@@ -117,7 +135,7 @@ export default function ChatView({
     filters.mediaTypes.length > 0;
 
   const filteredMessages = useMemo(() => {
-    const allMessages = chat?.messages ?? [];
+    const allMessages = activeChat?.messages ?? [];
     if (!hasNonQueryFilters) return allMessages;
     const from = filters.dateFrom
       ? new Date(filters.dateFrom + "T00:00:00")
@@ -143,7 +161,7 @@ export default function ChatView({
       }
       return true;
     });
-  }, [chat?.messages, filters.senders, filters.dateFrom, filters.dateTo, filters.mediaTypes, hasNonQueryFilters]);
+  }, [activeChat?.messages, filters.senders, filters.dateFrom, filters.dateTo, filters.mediaTypes, hasNonQueryFilters]);
 
   const scrollToBottom = useCallback(() => {
     const el = virtuosoScrollerRef.current as HTMLElement | null;
@@ -175,12 +193,12 @@ export default function ChatView({
     requestAnimationFrame(step);
   }, []);
 
-  const isGroup = (chat?.participants?.length ?? 0) > 2;
-  const otherParticipants = (chat?.participants ?? []).filter(
+  const isGroup = (activeChat?.participants?.length ?? 0) > 2;
+  const otherParticipants = (activeChat?.participants ?? []).filter(
     (p) => p !== meSender,
   );
   const headerName =
-    chatTitle ||
+    activeChat?.title ||
     (otherParticipants.length === 1
       ? otherParticipants[0]
       : otherParticipants.join(", ") || t("defaultChatTitle"));
@@ -189,7 +207,7 @@ export default function ChatView({
   const { lightboxItems, msgIdToMediaIndex } = useMemo(() => {
     const items: LightboxItem[] = [];
     const map = new Map<string, number>();
-    for (const msg of chat?.messages ?? []) {
+    for (const msg of activeChat?.messages ?? []) {
       const att = msg.attachment;
       if (
         att?.url &&
@@ -204,7 +222,7 @@ export default function ChatView({
       }
     }
     return { lightboxItems: items, msgIdToMediaIndex: map };
-  }, [chat?.messages]);
+  }, [activeChat?.messages]);
 
   const handleMediaClick = useCallback(
     (messageId: string) => {
@@ -218,22 +236,11 @@ export default function ChatView({
     if (lightboxItems.length > 0) setLightboxStart({ gallery: true });
   }, [lightboxItems.length]);
 
-  const lastMessage = chat
-    ? chat.messages[chat.messages.length - 1]
-    : undefined;
-  const lastMessagePreview = lastMessage
-    ? lastMessage.attachment
-      ? lastMessage.attachment.type === "image"
-        ? t("photoPreview")
-        : lastMessage.attachment.type === "video"
-          ? t("videoPreview")
-          : lastMessage.attachment.type === "audio"
-            ? t("audioPreview")
-            : lastMessage.attachment.type === "sticker"
-              ? t("stickerPreview")
-              : t("documentPreview")
-      : (lastMessage.text || "").slice(0, 60)
-    : "";
+  const visibleChats = useMemo(() => {
+    const q = sidebarQuery.trim().toLowerCase();
+    if (!q) return chats;
+    return chats.filter((c) => c.title.toLowerCase().includes(q));
+  }, [chats, sidebarQuery]);
 
   type RenderItem =
     | { type: "separator"; id: string; date: Date }
@@ -348,30 +355,6 @@ export default function ChatView({
     setMatchPos((p) => (p + 1) % matchIndices.length);
   }, [matchIndices.length]);
 
-  const renderItem = useCallback(
-    (index: number, item: RenderItem) => {
-      if (item.type === "separator") {
-        return (
-          <div className="flex justify-center my-3 px-4">
-            <div className="bg-wa-panel/95 text-wa-text-muted text-xs px-3 py-1.5 rounded-md shadow-sm">
-              {formatDateSeparator(item.date, dict)}
-            </div>
-          </div>
-        );
-      }
-      return (
-        <MessageBubble
-          message={item.message}
-          isOutgoing={item.isOutgoing}
-          showSender={item.showSender}
-          isGroup={isGroup}
-          onMediaClick={handleMediaClick}
-        />
-      );
-    },
-    [dict, isGroup, handleMediaClick],
-  );
-
   return (
     <div className="h-dvh flex flex-col w-full bg-wa-chat-bg overflow-hidden">
       <div className="w-full flex-1 min-h-0 flex flex-col">
@@ -382,7 +365,7 @@ export default function ChatView({
               opens it via the hamburger in the chat header. */}
           <aside
             className={`${
-              showSidebar || !chat
+              showSidebar || !activeChat
                 ? "absolute inset-0 z-20 flex"
                 : "hidden"
             } md:relative md:flex md:w-[380px] md:shrink-0 flex-col bg-wa-sidebar border-r border-wa-divider overflow-hidden`}
@@ -406,7 +389,7 @@ export default function ChatView({
               <div className="flex items-center gap-1.5">
                 <ThemeSwitcher />
                 <LanguageSwitcher />
-                {chat && (
+                {activeChat && (
                   <button
                     type="button"
                     onClick={() => setShowSidebar(false)}
@@ -434,7 +417,7 @@ export default function ChatView({
                   value={sidebarQuery}
                   onChange={(e) => setSidebarQuery(e.target.value)}
                   placeholder={t("searchChats")}
-                  className="flex-1 min-w-0 bg-transparent outline-none text-sm text-wa-text placeholder:text-wa-text-muted"
+                  className="flex-1 min-w-0 bg-transparent outline-none text-base sm:text-sm text-wa-text placeholder:text-wa-text-muted"
                 />
                 {sidebarQuery && (
                   <button
@@ -450,87 +433,7 @@ export default function ChatView({
             </div>
 
             <div className="flex-1 overflow-y-auto">
-              {chat &&
-              (!sidebarQuery ||
-                headerName
-                  .toLowerCase()
-                  .includes(sidebarQuery.toLowerCase())) ? (
-                confirmDelete ? (
-                  <div className="px-4 py-4 bg-wa-panel/60 border-y border-wa-divider/60 animate-fade-in-up">
-                    <div className="flex items-start gap-3 mb-3">
-                      <span className="w-8 h-8 rounded-full bg-wa-green-dark/10 dark:bg-white/10 text-wa-green-dark dark:text-wa-green flex items-center justify-center shrink-0">
-                        <i
-                          className="fa-solid fa-triangle-exclamation text-xs"
-                          aria-hidden
-                        />
-                      </span>
-                      <p className="text-sm text-wa-text leading-snug">
-                        {t("confirmDeleteChat")}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setConfirmDelete(false);
-                          onReset();
-                        }}
-                        className="flex-1 text-sm font-medium bg-wa-green-dark hover:bg-wa-green text-white px-3 py-1.5 rounded-lg shadow-sm transition"
-                      >
-                        {t("confirmYes")}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setConfirmDelete(false)}
-                        className="flex-1 text-sm font-medium border border-wa-divider hover:border-wa-text-muted/40 text-wa-text px-3 py-1.5 rounded-lg transition"
-                      >
-                        {t("confirmNo")}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="group relative">
-                    <button
-                      type="button"
-                      onClick={openGallery}
-                      className="w-full flex items-center gap-3 px-4 py-3 bg-wa-panel hover:bg-wa-raised transition text-left"
-                      title={t("openGallery")}
-                    >
-                      <Avatar name={headerName} size={48} />
-                      <div className="flex-1 min-w-0 pr-8">
-                        <div className="flex items-center justify-between">
-                          <div className="font-medium truncate">
-                            {headerName}
-                          </div>
-                          {lastMessage?.timestamp && (
-                            <div className="text-[11px] text-wa-text-muted shrink-0 ml-2">
-                              {formatTime(lastMessage.timestamp)}
-                            </div>
-                          )}
-                        </div>
-                        <div className="text-sm text-wa-text-muted truncate">
-                          {lastMessagePreview}
-                        </div>
-                      </div>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setConfirmDelete(true);
-                      }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full text-wa-text-muted hover:text-wa-text hover:bg-black/10 dark:hover:bg-white/10 opacity-0 group-hover:opacity-100 focus:opacity-100 transition flex items-center justify-center"
-                      title={t("deleteChat")}
-                      aria-label={t("deleteChat")}
-                    >
-                      <i
-                        className="fa-regular fa-trash-can text-xs"
-                        aria-hidden
-                      />
-                    </button>
-                  </div>
-                )
-              ) : !chat ? (
+              {chats.length === 0 ? (
                 <div className="px-6 py-12 flex flex-col items-center text-center">
                   <span className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-wa-green-dark/15 to-emerald-400/10 dark:from-white/10 dark:to-emerald-300/10 ring-1 ring-inset ring-wa-green-dark/10 dark:ring-white/10 flex items-center justify-center mb-3">
                     <i
@@ -551,7 +454,7 @@ export default function ChatView({
                     {t("dropUnified")}
                   </p>
                 </div>
-              ) : (
+              ) : visibleChats.length === 0 ? (
                 <div className="px-6 py-12 flex flex-col items-center text-center text-wa-text-muted">
                   <span className="w-12 h-12 rounded-full bg-wa-panel border border-wa-divider/60 flex items-center justify-center mb-2">
                     <i
@@ -561,25 +464,119 @@ export default function ChatView({
                   </span>
                   <p className="text-sm">{t("noMatchingChats")}</p>
                 </div>
+              ) : (
+                visibleChats.map((c) => {
+                  const isActive = c.id === activeChatId;
+                  const isConfirming = confirmDeleteId === c.id;
+                  const preview = chatPreviewText(c, t);
+                  if (isConfirming) {
+                    return (
+                      <div
+                        key={c.id}
+                        className="px-4 py-4 bg-wa-panel/60 border-y border-wa-divider/60 animate-fade-in-up"
+                      >
+                        <div className="flex items-start gap-3 mb-3">
+                          <span className="w-8 h-8 rounded-full bg-wa-green-dark/10 dark:bg-white/10 text-wa-green-dark dark:text-wa-green flex items-center justify-center shrink-0">
+                            <i
+                              className="fa-solid fa-triangle-exclamation text-xs"
+                              aria-hidden
+                            />
+                          </span>
+                          <p className="text-sm text-wa-text leading-snug">
+                            {t("confirmDeleteChat")}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setConfirmDeleteId(null);
+                              deleteChat(c.id);
+                            }}
+                            className="flex-1 text-sm font-medium bg-wa-green-dark hover:bg-wa-green text-white px-3 py-1.5 rounded-lg shadow-sm transition"
+                          >
+                            {t("confirmYes")}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setConfirmDeleteId(null)}
+                            className="flex-1 text-sm font-medium border border-wa-divider hover:border-wa-text-muted/40 text-wa-text px-3 py-1.5 rounded-lg transition"
+                          >
+                            {t("confirmNo")}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div key={c.id} className="group relative">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          selectChat(c.id);
+                          setShowSidebar(false);
+                        }}
+                        className={`w-full flex items-center gap-3 px-4 py-3 transition text-left ${
+                          isActive
+                            ? "bg-wa-raised"
+                            : "bg-wa-panel hover:bg-wa-raised"
+                        }`}
+                        title={c.title}
+                      >
+                        <Avatar name={c.title} size={48} />
+                        <div className="flex-1 min-w-0 pr-8">
+                          <div className="flex items-center justify-between">
+                            <div className="font-medium truncate">
+                              {c.title}
+                            </div>
+                            {preview.timestamp && (
+                              <div className="text-[11px] text-wa-text-muted shrink-0 ml-2">
+                                {formatTime(preview.timestamp)}
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-sm text-wa-text-muted truncate">
+                            {preview.text}
+                          </div>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConfirmDeleteId(c.id);
+                        }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full text-wa-text-muted hover:text-wa-text hover:bg-black/10 dark:hover:bg-white/10 opacity-0 group-hover:opacity-100 focus:opacity-100 transition flex items-center justify-center"
+                        title={t("deleteChat")}
+                        aria-label={t("deleteChat")}
+                      >
+                        <i
+                          className="fa-regular fa-trash-can text-xs"
+                          aria-hidden
+                        />
+                      </button>
+                    </div>
+                  );
+                })
               )}
             </div>
 
-            {chat && (
+            {activeChat && (
               <div className="px-4 py-3 border-t border-wa-divider">
                 <div className="text-xs font-semibold text-wa-text-muted mb-2 uppercase tracking-wide">
                   {t("pickMe")}
                 </div>
                 <div className="space-y-1.5 max-h-40 overflow-y-auto">
-                  {chat.participants.length === 0 && (
+                  {activeChat.participants.length === 0 && (
                     <div className="text-xs text-wa-text-muted">
                       {t("noParticipants")}
                     </div>
                   )}
-                  {chat.participants.map((p) => (
+                  {activeChat.participants.map((p) => (
                     <button
                       key={p}
                       type="button"
-                      onClick={() => onMeChange(p)}
+                      onClick={() => setMeSender(p)}
                       className={`w-full text-left text-sm px-2 py-1 rounded ${
                         meSender === p
                           ? "bg-wa-green-dark text-white"
@@ -634,7 +631,7 @@ export default function ChatView({
 
           {/* Chat panel */}
           <section className="flex-1 flex flex-col min-w-0 min-h-0">
-            {!chat ? (
+            {!activeChat ? (
               <div className="flex-1 w-full flex items-center justify-center p-4 wa-chat-bg">
                 <Dropzone
                   variant="card"
@@ -673,8 +670,8 @@ export default function ChatView({
                 <div className="flex-1 min-w-0">
                   <div className="font-medium truncate">{headerName}</div>
                   <div className="text-xs text-wa-text-muted truncate">
-                    {chat.participants.length > 0
-                      ? t("participantCount", { n: chat.participants.length })
+                    {activeChat.participants.length > 0
+                      ? t("participantCount", { n: activeChat.participants.length })
                       : ""}
                   </div>
                 </div>
@@ -705,7 +702,7 @@ export default function ChatView({
                 <ChatFilters
                   value={filters}
                   onChange={setFilters}
-                  participants={chat.participants}
+                  participants={activeChat.participants}
                   matchCount={filteredMessages.length}
                   searchMatchCount={matchIndices.length}
                   searchMatchIndex={matchPos}
@@ -733,8 +730,9 @@ export default function ChatView({
                   followOutput
                   atBottomStateChange={setAtBottom}
                   atBottomThreshold={120}
-                  increaseViewportBy={1000}
-                  className="chat-scroll overscroll-y-contain"
+                  increaseViewportBy={1500}
+                  defaultItemHeight={72}
+                  className="chat-scroll overscroll-none [overflow-anchor:none]"
                   style={{ position: "absolute", inset: 0 }}
                   itemContent={(index) => {
                     const item = items[index];

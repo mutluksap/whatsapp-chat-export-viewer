@@ -5,16 +5,7 @@ import ChatView from "@/components/ChatView";
 import { useChat } from "@/components/ChatProvider";
 
 export default function ChatsPage() {
-  const {
-    chat,
-    chatTitle,
-    meSender,
-    isLoading,
-    progress,
-    reset,
-    setMeSender,
-    clearLoadingState,
-  } = useChat();
+  const { activeChat, isLoading, progress, clearLoadingState } = useChat();
 
   // When we land on /chats with a chat already loaded, drop the carried-over
   // isLoading/progress state from the upload flow on Home. Without this the
@@ -22,18 +13,10 @@ export default function ChatsPage() {
   // Dropzone on Home stays at 100% during navigation instead of flashing
   // back to its default look).
   useEffect(() => {
-    if (chat && (isLoading || progress)) {
+    if (activeChat && (isLoading || progress)) {
       clearLoadingState();
     }
-  }, [chat, isLoading, progress, clearLoadingState]);
+  }, [activeChat, isLoading, progress, clearLoadingState]);
 
-  return (
-    <ChatView
-      chat={chat}
-      chatTitle={chatTitle}
-      meSender={meSender}
-      onMeChange={setMeSender}
-      onReset={reset}
-    />
-  );
+  return <ChatView />;
 }

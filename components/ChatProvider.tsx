@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
 } from "react";
 import {
@@ -19,16 +20,32 @@ import { useI18n } from "./I18nProvider";
 
 export type ImportMode = "text" | "zip";
 
-type Ctx = {
-  chat: LoadedChat | null;
-  chatTitle: string;
+export type LoadedChatRecord = LoadedChat & {
+  id: string;
+  title: string;
   meSender: string | null;
+};
+
+type Ctx = {
+  /** All currently loaded chats, in import order. */
+  chats: LoadedChatRecord[];
+  /** Id of the chat currently selected to display in the chat panel. */
+  activeChatId: string | null;
+  /** Resolved active chat (lookup of activeChatId in chats). */
+  activeChat: LoadedChatRecord | null;
   isLoading: boolean;
   progress: LoadProgress | null;
   error: string | null;
+  /** Load a new chat from a file. Appends to `chats` and selects it. */
   load: (file: File, mode: ImportMode) => Promise<boolean>;
+  /** Make the chat with the given id the active one. */
+  selectChat: (id: string) => void;
+  /** Delete the chat with the given id. If it was active, falls back to another (or null). */
+  deleteChat: (id: string) => void;
+  /** Update the "me" sender for the currently active chat. */
+  setMeSender: (sender: string | null) => void;
+  /** Clear all chats. */
   reset: () => void;
-  setMeSender: (s: string | null) => void;
   clearLoadingState: () => void;
 };
 
@@ -62,20 +79,32 @@ function pickDefaultMe(
   return best;
 }
 
+function makeChatId(): string {
+  return `chat-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 export function ChatProvider({ children }: { children: React.ReactNode }) {
   const { t } = useI18n();
-  const [chat, setChat] = useState<LoadedChat | null>(null);
-  const [chatTitle, setChatTitle] = useState<string>("");
-  const [meSender, setMeSender] = useState<string | null>(null);
+  const [chats, setChats] = useState<LoadedChatRecord[]>([]);
+  const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState<LoadProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const activeChat = useMemo(
+    () => chats.find((c) => c.id === activeChatId) ?? null,
+    [chats, activeChatId],
+  );
+
+  // Revoke media URLs for all chats on unmount.
   useEffect(() => {
     return () => {
-      if (chat) revokeBlobUrls(chat.mediaBlobUrls);
+      for (const c of chats) {
+        revokeBlobUrls(c.mediaBlobUrls);
+      }
     };
-  }, [chat]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const load = useCallback(
     async (file: File, mode: ImportMode): Promise<boolean> => {
@@ -106,9 +135,15 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
           if (m.sender) counts.set(m.sender, (counts.get(m.sender) ?? 0) + 1);
         }
 
-        setChat(loaded);
-        setChatTitle(deriveTitle(file.name, t("defaultChatTitle")));
-        setMeSender(pickDefaultMe(loaded.participants, counts));
+        const record: LoadedChatRecord = {
+          ...loaded,
+          id: makeChatId(),
+          title: deriveTitle(file.name, t("defaultChatTitle")),
+          meSender: pickDefaultMe(loaded.participants, counts),
+        };
+
+        setChats((prev) => [...prev, record]);
+        setActiveChatId(record.id);
         success = true;
         return true;
       } catch (err) {
@@ -134,21 +169,49 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
           setProgress(null);
         }
         // On success, keep isLoading=true and progress at 100% until the
-        // chat page mounts and calls clearLoadingState(). This prevents the
-        // Dropzone from briefly flashing back to its default state between
-        // load completion and navigation.
+        // chat page mounts and calls clearLoadingState() — prevents flashing
+        // back to the default Dropzone state during navigation.
       }
     },
     [t],
   );
 
-  const reset = useCallback(() => {
-    setChat((prev) => {
-      if (prev) revokeBlobUrls(prev.mediaBlobUrls);
-      return null;
+  const selectChat = useCallback((id: string) => {
+    setActiveChatId(id);
+  }, []);
+
+  const deleteChat = useCallback((id: string) => {
+    setChats((prev) => {
+      const target = prev.find((c) => c.id === id);
+      if (target) revokeBlobUrls(target.mediaBlobUrls);
+      const next = prev.filter((c) => c.id !== id);
+      // If the deleted chat was active, switch active to the next available.
+      setActiveChatId((curId) => {
+        if (curId !== id) return curId;
+        return next[0]?.id ?? null;
+      });
+      return next;
     });
-    setChatTitle("");
-    setMeSender(null);
+  }, []);
+
+  const setMeSender = useCallback(
+    (sender: string | null) => {
+      if (!activeChatId) return;
+      setChats((prev) =>
+        prev.map((c) =>
+          c.id === activeChatId ? { ...c, meSender: sender } : c,
+        ),
+      );
+    },
+    [activeChatId],
+  );
+
+  const reset = useCallback(() => {
+    setChats((prev) => {
+      for (const c of prev) revokeBlobUrls(c.mediaBlobUrls);
+      return [];
+    });
+    setActiveChatId(null);
     setError(null);
     setIsLoading(false);
     setProgress(null);
@@ -162,15 +225,17 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   return (
     <ChatContext.Provider
       value={{
-        chat,
-        chatTitle,
-        meSender,
+        chats,
+        activeChatId,
+        activeChat,
         isLoading,
         progress,
         error,
         load,
-        reset,
+        selectChat,
+        deleteChat,
         setMeSender,
+        reset,
         clearLoadingState,
       }}
     >

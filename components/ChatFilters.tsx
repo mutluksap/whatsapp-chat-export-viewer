@@ -126,7 +126,7 @@ export default function ChatFilters({
             <i className="fa-solid fa-arrow-left text-sm" aria-hidden />
           </button>
         )}
-        <div className="flex-1 flex items-center gap-2 bg-wa-raised rounded-full px-3 py-1.5 ring-1 ring-wa-divider/40 focus-within:ring-wa-green/50 transition">
+        <div className="flex-1 min-w-0 flex items-center gap-2 bg-wa-raised rounded-full px-3 py-1.5 ring-1 ring-wa-divider/40 focus-within:ring-wa-green/50 transition">
           <i
             className="fa-solid fa-magnifying-glass text-xs text-wa-text-muted"
             aria-hidden
@@ -143,7 +143,7 @@ export default function ChatFilters({
               }
             }}
             placeholder={t("filterSearchPlaceholder")}
-            className="flex-1 min-w-0 bg-transparent outline-none text-sm text-wa-text placeholder:text-wa-text-muted"
+            className="flex-1 min-w-0 bg-transparent outline-none text-base sm:text-sm text-wa-text placeholder:text-wa-text-muted"
           />
           {value.query && (
             <>
@@ -288,7 +288,7 @@ export default function ChatFilters({
                 onChange={(e) =>
                   onChange({ ...value, dateFrom: e.target.value })
                 }
-                className="w-full bg-wa-raised border border-wa-divider/60 text-sm text-wa-text rounded-lg px-3 py-1.5 outline-none focus:border-wa-green/50"
+                className="w-full bg-wa-raised border border-wa-divider/60 text-base sm:text-sm text-wa-text rounded-lg px-3 py-1.5 outline-none focus:border-wa-green/50"
               />
             </label>
             <label className="block">
@@ -299,7 +299,7 @@ export default function ChatFilters({
                 type="date"
                 value={value.dateTo}
                 onChange={(e) => onChange({ ...value, dateTo: e.target.value })}
-                className="w-full bg-wa-raised border border-wa-divider/60 text-sm text-wa-text rounded-lg px-3 py-1.5 outline-none focus:border-wa-green/50"
+                className="w-full bg-wa-raised border border-wa-divider/60 text-base sm:text-sm text-wa-text rounded-lg px-3 py-1.5 outline-none focus:border-wa-green/50"
               />
             </label>
           </div>
