@@ -477,17 +477,15 @@ export default function ChatView() {
             <div className="bg-wa-panel px-4 py-2.5 flex items-center justify-between gap-2">
               <Link
                 href="/"
-                className="group flex items-center gap-2.5 shrink-0"
+                className="group flex items-center shrink-0"
                 title={t("navHome")}
+                aria-label={t("brand")}
               >
                 <span className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-wa-green-dark to-emerald-500 flex items-center justify-center shadow-sm shadow-wa-green-dark/25 transition-transform group-hover:scale-105">
                   <i
                     className="fa-brands fa-whatsapp text-white text-lg"
                     aria-hidden
                   />
-                </span>
-                <span className="text-wa-text font-semibold tracking-tight">
-                  {t("brand")}
                 </span>
               </Link>
               <div className="flex items-center gap-1.5">
@@ -678,24 +676,38 @@ export default function ChatView() {
                 type="button"
                 onClick={handlePickFile}
                 disabled={isLoading}
-                className="w-full inline-flex items-center justify-center gap-2 bg-wa-green-dark hover:bg-wa-green text-white text-sm font-medium px-3 py-2.5 rounded-lg shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 disabled:bg-wa-text-muted/40 disabled:hover:bg-wa-text-muted/40 disabled:hover:shadow-sm disabled:hover:translate-y-0 disabled:cursor-not-allowed"
+                className="relative overflow-hidden w-full inline-flex items-center justify-center gap-2 bg-wa-green-dark hover:bg-wa-green text-white text-sm font-medium px-3 py-2.5 rounded-lg shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 disabled:hover:shadow-sm disabled:hover:translate-y-0 disabled:cursor-progress"
               >
-                {isLoading ? (
-                  <>
-                    <i
-                      className="fa-solid fa-circle-notch animate-spin"
-                      aria-hidden
-                    />
-                    {progress && progress.total > 0
-                      ? `${progress.done} / ${progress.total}`
-                      : t("processing")}
-                  </>
-                ) : (
-                  <>
-                    <i className="fa-solid fa-cloud-arrow-up" aria-hidden />
-                    {t("uploadNewChat")}
-                  </>
+                {isLoading && (
+                  <span
+                    className="absolute inset-y-0 left-0 bg-white/25 transition-[width] duration-200 ease-out"
+                    style={{
+                      width:
+                        progress && progress.total > 0
+                          ? `${(progress.done / progress.total) * 100}%`
+                          : "0%",
+                    }}
+                    aria-hidden
+                  />
                 )}
+                <span className="relative inline-flex items-center gap-2">
+                  {isLoading ? (
+                    <>
+                      <i
+                        className="fa-solid fa-circle-notch animate-spin"
+                        aria-hidden
+                      />
+                      {progress && progress.total > 0
+                        ? `${progress.done} / ${progress.total}`
+                        : t("processing")}
+                    </>
+                  ) : (
+                    <>
+                      <i className="fa-solid fa-cloud-arrow-up" aria-hidden />
+                      {t("uploadNewChat")}
+                    </>
+                  )}
+                </span>
               </button>
             </div>
 

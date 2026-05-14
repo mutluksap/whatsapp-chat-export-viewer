@@ -84,6 +84,12 @@ function AttachmentView({
 
   if (att.type === "image" || att.type === "sticker") {
     const isSticker = att.type === "sticker";
+    // Use width/height attributes when known so the browser reserves the
+    // exact aspect ratio before bytes decode (no layout shift on scroll).
+    const dimsStyle: React.CSSProperties | undefined =
+      att.width && att.height
+        ? { aspectRatio: `${att.width} / ${att.height}` }
+        : undefined;
     return (
       <button
         type="button"
@@ -98,12 +104,14 @@ function AttachmentView({
         <img
           src={att.url}
           alt={att.filename}
-          loading="lazy"
+          width={att.width}
+          height={att.height}
           decoding="async"
+          style={dimsStyle}
           className={
             isSticker
               ? "max-w-[160px] max-h-[160px] cursor-zoom-in"
-              : "rounded-md max-w-full max-h-[360px] object-cover cursor-zoom-in"
+              : "rounded-md max-w-full max-h-[360px] object-contain cursor-zoom-in"
           }
         />
       </button>

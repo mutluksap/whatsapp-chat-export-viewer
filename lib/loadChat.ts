@@ -81,10 +81,22 @@ export async function loadFromZip(
   const content = await chatEntry.async("string");
   const parsed = parseWhatsAppText(content);
 
-  // Map filename → blob URL for all media entries (with case-insensitive lookup)
-  const filenameToUrl = new Map<string, string>();
-  const lowerToUrl = new Map<string, string>();
+  // Map filename → { url, w, h } for all media entries (case-insensitive lookup).
+  // Dimensions are pre-read for images so MessageBubble can render <img> with
+  // explicit width/height attributes — that reserves space before the bytes
+  // decode and keeps the virtualized list from shifting during scroll-up.
+  type MediaInfo = { url: string; width?: number; height?: number };
+  const filenameToInfo = new Map<string, MediaInfo>();
+  const lowerToInfo = new Map<string, MediaInfo>();
   const blobUrls: string[] = [];
+
+  const readImageDims = (url: string): Promise<{ w: number; h: number } | null> =>
+    new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+      img.onerror = () => resolve(null);
+      img.src = url;
+    });
 
   const mediaEntries: { filename: string; entry: JSZip.JSZipObject }[] = [];
   zip.forEach((relativePath, entry) => {
@@ -99,27 +111,33 @@ export async function loadFromZip(
   await Promise.all(
     mediaEntries.map(async ({ filename, entry }) => {
       const blob = await entry.async("blob");
-      const typedBlob = new Blob([blob], { type: mimeFor(filename) });
+      const mime = mimeFor(filename);
+      const typedBlob = new Blob([blob], { type: mime });
       const url = URL.createObjectURL(typedBlob);
-      filenameToUrl.set(filename, url);
-      lowerToUrl.set(filename.toLowerCase(), url);
       blobUrls.push(url);
+      let info: MediaInfo = { url };
+      if (mime.startsWith("image/")) {
+        const dims = await readImageDims(url);
+        if (dims) info = { url, width: dims.w, height: dims.h };
+      }
+      filenameToInfo.set(filename, info);
+      lowerToInfo.set(filename.toLowerCase(), info);
       completed++;
       onProgress?.({ done: completed, total: mediaEntries.length });
     }),
   );
 
-  const lookup = (rawName: string): string | undefined => {
+  const lookup = (rawName: string): MediaInfo | undefined => {
     const name = rawName.trim();
-    let url = filenameToUrl.get(name);
-    if (url) return url;
-    url = lowerToUrl.get(name.toLowerCase());
-    if (url) return url;
+    let info = filenameToInfo.get(name);
+    if (info) return info;
+    info = lowerToInfo.get(name.toLowerCase());
+    if (info) return info;
     // basename fallback in case the message text contains a path
     const base = name.split(/[\\/]/).pop()!;
     if (base !== name) {
-      url = filenameToUrl.get(base) || lowerToUrl.get(base.toLowerCase());
-      if (url) return url;
+      info = filenameToInfo.get(base) || lowerToInfo.get(base.toLowerCase());
+      if (info) return info;
     }
     return undefined;
   };
@@ -130,10 +148,12 @@ export async function loadFromZip(
   for (const msg of parsed.messages) {
     if (msg.attachment && msg.attachment.filename) {
       detected++;
-      const url = lookup(msg.attachment.filename);
-      if (url) {
-        msg.attachment.url = url;
+      const info = lookup(msg.attachment.filename);
+      if (info) {
+        msg.attachment.url = info.url;
         msg.attachment.mimeType = mimeFor(msg.attachment.filename);
+        if (info.width) msg.attachment.width = info.width;
+        if (info.height) msg.attachment.height = info.height;
         matched++;
       } else {
         unmatched.push(msg.attachment.filename);

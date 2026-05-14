@@ -10,6 +10,10 @@ export type Attachment = {
   type: AttachmentType;
   url?: string;
   mimeType?: string;
+  /** Natural pixel dimensions, read upfront for images so the layout can
+   *  reserve the right amount of space before bytes load (no scroll jump). */
+  width?: number;
+  height?: number;
 };
 
 export type Message = {
