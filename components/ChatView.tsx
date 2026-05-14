@@ -373,7 +373,7 @@ export default function ChatView({
   );
 
   return (
-    <div className="h-[100svh] supports-[height:100dvh]:h-[100dvh] flex flex-col w-full bg-wa-chat-bg overflow-hidden">
+    <div className="h-dvh flex flex-col w-full bg-wa-chat-bg overflow-hidden">
       <div className="w-full flex-1 min-h-0 flex flex-col">
         <div className="overflow-hidden flex flex-1 min-h-0">
           {/* Sidebar — on mobile, show by default whenever no chat is loaded
@@ -390,20 +390,36 @@ export default function ChatView({
             <div className="bg-wa-panel px-4 py-2.5 flex items-center justify-between gap-2">
               <Link
                 href="/"
-                className="group inline-flex items-center gap-2 font-medium text-wa-text hover:text-wa-green-dark dark:hover:text-wa-green transition"
+                className="group flex items-center gap-2.5 shrink-0"
                 title={t("navHome")}
               >
-                <span className="w-7 h-7 rounded-full bg-wa-green-dark flex items-center justify-center transition-transform group-hover:scale-105">
+                <span className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-wa-green-dark to-emerald-500 flex items-center justify-center shadow-sm shadow-wa-green-dark/25 transition-transform group-hover:scale-105">
                   <i
-                    className="fa-brands fa-whatsapp text-white text-sm"
+                    className="fa-brands fa-whatsapp text-white text-lg"
                     aria-hidden
                   />
                 </span>
-                {t("chat")}
+                <span className="text-wa-text font-semibold tracking-tight">
+                  {t("brand")}
+                </span>
               </Link>
               <div className="flex items-center gap-1.5">
                 <ThemeSwitcher />
                 <LanguageSwitcher />
+                {chat && (
+                  <button
+                    type="button"
+                    onClick={() => setShowSidebar(false)}
+                    className="md:hidden w-8 h-8 rounded-full flex items-center justify-center text-wa-text-muted hover:text-wa-text hover:bg-black/5 dark:hover:bg-white/10 transition shrink-0"
+                    aria-label={t("close")}
+                    title={t("close")}
+                  >
+                    <i
+                      className="fa-solid fa-xmark text-base"
+                      aria-hidden
+                    />
+                  </button>
+                )}
               </div>
             </div>
 
@@ -614,16 +630,6 @@ export default function ChatView({
               </button>
             </div>
 
-            {chat && (
-              <button
-                type="button"
-                onClick={() => setShowSidebar(false)}
-                className="md:hidden absolute top-2 right-2 p-2 text-white bg-black/30 rounded-full"
-                aria-label={t("close")}
-              >
-                <i className="fa-solid fa-xmark text-base" aria-hidden />
-              </button>
-            )}
           </aside>
 
           {/* Chat panel */}
@@ -727,8 +733,8 @@ export default function ChatView({
                   followOutput
                   atBottomStateChange={setAtBottom}
                   atBottomThreshold={120}
-                  increaseViewportBy={600}
-                  className="chat-scroll overscroll-contain"
+                  increaseViewportBy={1000}
+                  className="chat-scroll overscroll-y-contain"
                   style={{ position: "absolute", inset: 0 }}
                   itemContent={(index) => {
                     const item = items[index];

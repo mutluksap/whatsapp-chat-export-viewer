@@ -67,8 +67,9 @@ export default function Lightbox({ items, start, onClose }: Props) {
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-white/15"
+            className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-white/15 transition"
             aria-label={t("close")}
+            title={t("close")}
           >
             <i className="fa-solid fa-xmark text-xl" aria-hidden />
           </button>
@@ -156,7 +157,7 @@ export default function Lightbox({ items, start, onClose }: Props) {
               e.stopPropagation();
               setMode("gallery");
             }}
-            className="p-2 rounded-full hover:bg-white/15"
+            className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-white/15 transition"
             aria-label={t("gallery")}
             title={t("gallery")}
           >
@@ -166,7 +167,7 @@ export default function Lightbox({ items, start, onClose }: Props) {
             href={item.url}
             download={item.filename}
             onClick={(e) => e.stopPropagation()}
-            className="p-2 rounded-full hover:bg-white/15"
+            className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-white/15 transition"
             aria-label="Download"
             title="Download"
           >
@@ -178,8 +179,9 @@ export default function Lightbox({ items, start, onClose }: Props) {
               e.stopPropagation();
               onClose();
             }}
-            className="p-2 rounded-full hover:bg-white/15"
+            className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-white/15 transition"
             aria-label={t("close")}
+            title={t("close")}
           >
             <i className="fa-solid fa-xmark text-xl" aria-hidden />
           </button>
@@ -194,8 +196,9 @@ export default function Lightbox({ items, start, onClose }: Props) {
             e.stopPropagation();
             setIndex(index - 1);
           }}
-          className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white"
+          className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 text-white transition"
           aria-label={t("previous")}
+          title={t("previous")}
         >
           <i className="fa-solid fa-chevron-left text-lg" aria-hidden />
         </button>
@@ -209,8 +212,9 @@ export default function Lightbox({ items, start, onClose }: Props) {
             e.stopPropagation();
             setIndex(index + 1);
           }}
-          className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white"
+          className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 text-white transition"
           aria-label={t("next")}
+          title={t("next")}
         >
           <i className="fa-solid fa-chevron-right text-lg" aria-hidden />
         </button>
