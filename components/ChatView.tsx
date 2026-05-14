@@ -103,6 +103,25 @@ export default function ChatView() {
 
   const meSender = activeChat?.meSender ?? null;
 
+  // Lock body scroll while the chat view is mounted so iOS rubber-banding
+  // can't expose the panel background below `h-dvh` as a gap when the URL
+  // bar collapses or when reaching the end of the scroller.
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    const prevHtml = html.style.overflow;
+    const prevBody = body.style.overflow;
+    const prevOverscroll = body.style.overscrollBehavior;
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    body.style.overscrollBehavior = "none";
+    return () => {
+      html.style.overflow = prevHtml;
+      body.style.overflow = prevBody;
+      body.style.overscrollBehavior = prevOverscroll;
+    };
+  }, []);
+
   const previewLabels = useMemo(
     () => ({
       photo: t("photoPreview"),
@@ -361,6 +380,68 @@ export default function ChatView() {
   const activeMatchIndex = matchIndices.length > 0
     ? matchIndices[Math.min(matchPos, matchIndices.length - 1)]
     : -1;
+
+  // For each item index, store the date of the most recent separator at or
+  // before it. Used by the floating sticky date pill that hovers over the
+  // chat while scrolling — like WhatsApp's date header.
+  const itemDates = useMemo(() => {
+    const out: (Date | null)[] = new Array(items.length).fill(null);
+    let cur: Date | null = null;
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      if (it.type === "separator") cur = it.date;
+      out[i] = cur;
+    }
+    return out;
+  }, [items]);
+
+  const [topVisibleIndex, setTopVisibleIndex] = useState(0);
+  const updateTopVisibleRef = useRef<() => void>(() => {});
+
+  // Virtuoso's `rangeChanged` reports the rendered (overscan-inclusive) range,
+  // not the visible range — with a large top buffer it stays at 0. So we
+  // listen to the scroller and find the first item whose bottom crosses the
+  // top edge of the scroller. That index drives the floating date pill.
+  useEffect(() => {
+    const scroller = virtuosoScrollerRef.current as HTMLElement | null;
+    if (!scroller) return;
+    let rafId = 0;
+    const update = () => {
+      const sRect = scroller.getBoundingClientRect();
+      const elems = scroller.querySelectorAll<HTMLElement>("[data-item-index]");
+      for (const el of elems) {
+        const r = el.getBoundingClientRect();
+        if (r.bottom > sRect.top + 1) {
+          const idx = Number(el.getAttribute("data-item-index"));
+          if (!Number.isNaN(idx)) setTopVisibleIndex(idx);
+          return;
+        }
+      }
+    };
+    updateTopVisibleRef.current = update;
+    const onScroll = () => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(update);
+    };
+    scroller.addEventListener("scroll", onScroll, { passive: true });
+    update();
+    return () => {
+      scroller.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(rafId);
+      updateTopVisibleRef.current = () => {};
+    };
+  }, [activeChatId, items.length]);
+
+  const stickyDate = useMemo<Date | null>(() => {
+    if (items.length === 0) return null;
+    const idx = Math.max(0, Math.min(topVisibleIndex, itemDates.length - 1));
+    if (idx <= 0) return null;
+    // While an inline separator is the topmost item, hide the floating pill
+    // so the two don't double-render with the same date.
+    const topItem = items[idx];
+    if (topItem.type === "separator") return null;
+    return itemDates[idx];
+  }, [topVisibleIndex, itemDates, items]);
 
   const onPrevMatch = useCallback(() => {
     if (matchIndices.length === 0) return;
@@ -743,16 +824,26 @@ export default function ChatView() {
                   scrollerRef={(ref) => {
                     virtuosoScrollerRef.current = ref;
                   }}
-                  totalCount={items.length}
+                  data={items}
                   followOutput
                   atBottomStateChange={setAtBottom}
                   atBottomThreshold={120}
-                  increaseViewportBy={1500}
-                  defaultItemHeight={72}
+                  increaseViewportBy={{ top: 3000, bottom: 1500 }}
+                  defaultItemHeight={120}
+                  computeItemKey={(_, item) => item.id}
+                  scrollSeekConfiguration={{
+                    enter: (v) => Math.abs(v) > 1200,
+                    exit: (v) => Math.abs(v) < 50,
+                  }}
+                  components={{
+                    ScrollSeekPlaceholder: ({ height }) => (
+                      <div style={{ height }} className="w-full" />
+                    ),
+                  }}
+                  itemsRendered={() => updateTopVisibleRef.current()}
                   className="chat-scroll overscroll-none [overflow-anchor:none]"
                   style={{ position: "absolute", inset: 0 }}
-                  itemContent={(index) => {
-                    const item = items[index];
+                  itemContent={(index, item) => {
                     if (!item) return <div style={{ height: 1 }} />;
                     if (item.type === "separator") {
                       return (
@@ -777,6 +868,17 @@ export default function ChatView() {
                   }}
                 />
               )}
+              {/* Floating sticky date pill — shows the date of the topmost
+                  visible section, like WhatsApp's hovering date header. */}
+              <div
+                className={`pointer-events-none absolute top-2 left-1/2 -translate-x-1/2 z-10 transition-opacity duration-200 ${
+                  stickyDate ? "opacity-100" : "opacity-0"
+                }`}
+              >
+                <div className="bg-wa-panel/95 text-wa-text-muted text-xs px-3 py-1.5 rounded-md shadow-sm">
+                  {stickyDate ? formatDateSeparator(stickyDate, dict) : ""}
+                </div>
+              </div>
               <button
                 type="button"
                 onClick={scrollToBottom}
