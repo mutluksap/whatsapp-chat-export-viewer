@@ -186,7 +186,7 @@ function MessageBubble({
 
   if (message.isSystem) {
     return (
-      <div className="flex justify-center my-2 px-4 msg-cv">
+      <div className="flex justify-center my-2 px-4">
         <div className="bg-wa-system-bubble/90 text-wa-text/80 text-xs px-3 py-1.5 rounded-md shadow-sm max-w-md text-center">
           {message.text}
         </div>
@@ -203,7 +203,7 @@ function MessageBubble({
 
   return (
     <div
-      className={`msg-cv flex px-3 sm:px-6 ${isOutgoing ? "justify-end" : "justify-start"}`}
+      className={`flex px-3 sm:px-6 ${isOutgoing ? "justify-end" : "justify-start"}`}
     >
       <div
         className={`relative ${bubbleCls} rounded-lg shadow-sm px-2.5 py-1.5 max-w-[85%] sm:max-w-[65%] transition-[outline-color] duration-200 outline outline-2 -outline-offset-2 ${

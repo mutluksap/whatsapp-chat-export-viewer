@@ -61,6 +61,7 @@ export default function ChatView() {
     isLoading,
     progress,
     error: loadError,
+    clearLoadingState,
   } = useChat();
   const [showSidebar, setShowSidebar] = useState(false);
   const [lightboxStart, setLightboxStart] = useState<LightboxStart | null>(
@@ -72,23 +73,29 @@ export default function ChatView() {
     uploadInputRef.current?.click();
   }, []);
 
+  // `load()` intentionally keeps isLoading=true on success so the Home page
+  // can show 100% during navigation. When uploading from within /chats we're
+  // already here, so clear the loading state after each in-chat upload to
+  // re-enable the button.
   const handleUploadChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       e.target.value = "";
       if (!file) return;
       const lower = file.name.toLowerCase();
-      if (lower.endsWith(".txt")) load(file, "text");
-      else if (lower.endsWith(".zip")) load(file, "zip");
+      if (lower.endsWith(".txt")) await load(file, "text");
+      else if (lower.endsWith(".zip")) await load(file, "zip");
+      clearLoadingState();
     },
-    [load],
+    [load, clearLoadingState],
   );
 
   const handleDropFile = useCallback(
-    (file: File, mode: "text" | "zip") => {
-      load(file, mode);
+    async (file: File, mode: "text" | "zip") => {
+      await load(file, mode);
+      clearLoadingState();
     },
-    [load],
+    [load, clearLoadingState],
   );
   const virtuosoRef = useRef<VirtuosoHandle | null>(null);
   const virtuosoScrollerRef = useRef<HTMLElement | Window | null>(null);

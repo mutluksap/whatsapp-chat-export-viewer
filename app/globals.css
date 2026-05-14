@@ -73,11 +73,15 @@ body {
   border-left: 8px solid transparent;
 }
 
-/* Skip layout/paint work for messages that are off-screen.
-   contain-intrinsic-size reserves space so the scrollbar stays accurate. */
-.msg-cv {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 60px;
+/* Hide the native date input calendar indicator so our custom clear (X)
+   button is the only widget visible on the right edge. The picker still
+   opens when the user taps anywhere on the input itself. */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  display: none;
+}
+input[type="date"]::-webkit-inner-spin-button,
+input[type="date"]::-webkit-clear-button {
+  display: none;
 }
 
 /* Custom scrollbar for chat area */
