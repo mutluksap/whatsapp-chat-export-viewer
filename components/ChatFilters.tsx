@@ -277,30 +277,64 @@ export default function ChatFilters({
             </div>
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-3">
-            <label className="block">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
+            <label className="block min-w-0">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-wa-text-muted block mb-1">
                 {t("filterDateFromLabel")}
               </span>
-              <input
-                type="date"
-                value={value.dateFrom}
-                onChange={(e) =>
-                  onChange({ ...value, dateFrom: e.target.value })
-                }
-                className="w-full bg-wa-raised border border-wa-divider/60 text-base sm:text-sm text-wa-text rounded-lg px-3 py-1.5 outline-none focus:border-wa-green/50"
-              />
+              <div className="relative">
+                <input
+                  type="date"
+                  value={value.dateFrom}
+                  onChange={(e) =>
+                    onChange({ ...value, dateFrom: e.target.value })
+                  }
+                  className="w-full min-w-0 bg-wa-raised border border-wa-divider/60 text-sm text-wa-text rounded-lg pl-2 pr-7 py-1.5 outline-none focus:border-wa-green/50"
+                />
+                {value.dateFrom && (
+                  <button
+                    type="button"
+                    onClick={() => onChange({ ...value, dateFrom: "" })}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-wa-panel text-wa-text-muted hover:text-wa-text flex items-center justify-center"
+                    aria-label={t("filterClearAll")}
+                    title={t("filterClearAll")}
+                  >
+                    <i
+                      className="fa-solid fa-xmark text-[10px]"
+                      aria-hidden
+                    />
+                  </button>
+                )}
+              </div>
             </label>
-            <label className="block">
+            <label className="block min-w-0">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-wa-text-muted block mb-1">
                 {t("filterDateToLabel")}
               </span>
-              <input
-                type="date"
-                value={value.dateTo}
-                onChange={(e) => onChange({ ...value, dateTo: e.target.value })}
-                className="w-full bg-wa-raised border border-wa-divider/60 text-base sm:text-sm text-wa-text rounded-lg px-3 py-1.5 outline-none focus:border-wa-green/50"
-              />
+              <div className="relative">
+                <input
+                  type="date"
+                  value={value.dateTo}
+                  onChange={(e) =>
+                    onChange({ ...value, dateTo: e.target.value })
+                  }
+                  className="w-full min-w-0 bg-wa-raised border border-wa-divider/60 text-sm text-wa-text rounded-lg pl-2 pr-7 py-1.5 outline-none focus:border-wa-green/50"
+                />
+                {value.dateTo && (
+                  <button
+                    type="button"
+                    onClick={() => onChange({ ...value, dateTo: "" })}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-wa-panel text-wa-text-muted hover:text-wa-text flex items-center justify-center"
+                    aria-label={t("filterClearAll")}
+                    title={t("filterClearAll")}
+                  >
+                    <i
+                      className="fa-solid fa-xmark text-[10px]"
+                      aria-hidden
+                    />
+                  </button>
+                )}
+              </div>
             </label>
           </div>
         </div>

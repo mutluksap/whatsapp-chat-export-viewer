@@ -57,7 +57,6 @@ export default function ChatView() {
     activeChatId,
     selectChat,
     deleteChat,
-    setMeSender,
     load,
     isLoading,
     progress,
@@ -658,38 +657,6 @@ export default function ChatView() {
                 })
               )}
             </div>
-
-            {activeChat && (
-              <div className="px-4 py-3 border-t border-wa-divider">
-                <div className="text-xs font-semibold text-wa-text-muted mb-2 uppercase tracking-wide">
-                  {t("pickMe")}
-                </div>
-                <div className="space-y-1.5 max-h-40 overflow-y-auto">
-                  {activeChat.participants.length === 0 && (
-                    <div className="text-xs text-wa-text-muted">
-                      {t("noParticipants")}
-                    </div>
-                  )}
-                  {activeChat.participants.map((p) => (
-                    <button
-                      key={p}
-                      type="button"
-                      onClick={() => setMeSender(p)}
-                      className={`w-full text-left text-sm px-2 py-1 rounded ${
-                        meSender === p
-                          ? "bg-wa-green-dark text-white"
-                          : "hover:bg-wa-raised text-wa-text"
-                      }`}
-                    >
-                      {p}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-[11px] text-wa-text-muted mt-2 leading-relaxed">
-                  {t("pickMeHint")}
-                </p>
-              </div>
-            )}
 
             {/* Bottom-left: Upload new chat */}
             <div className="px-3 py-3 border-t border-wa-divider">
