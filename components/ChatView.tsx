@@ -9,6 +9,7 @@ import Dropzone from "./Dropzone";
 import Avatar from "./Avatar";
 import MessageBubble from "./MessageBubble";
 import Lightbox, { type LightboxItem, type LightboxStart } from "./Lightbox";
+import StickyDatePill from "./StickyDatePill";
 import LanguageSwitcher from "./LanguageSwitcher";
 import ThemeSwitcher from "./ThemeSwitcher";
 import ChatFilters, {
@@ -347,6 +348,70 @@ export default function ChatView() {
     return out;
   }, [filteredMessages, meSender]);
 
+  // Pre-compute an estimated rendered height for each item so we can apply
+  // `min-height` upfront. Virtuoso then measures the bubble at almost exactly
+  // its estimated height — no scrollTop correction is needed when the item
+  // first enters the rendered range, which is what was producing the "jump"
+  // on mobile scroll-up (iOS momentum scrolling interrupted by JS scrollTop
+  // assignment).
+  const itemMinHeights = useMemo(() => {
+    const out = new Array<number>(items.length);
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      if (it.type === "separator") {
+        out[i] = 44;
+        continue;
+      }
+      const m = it.message;
+      if (m.isSystem) {
+        out[i] = 48;
+        continue;
+      }
+      const att = m.attachment;
+      let h = 0;
+      if (att?.type === "image" || att?.type === "sticker") {
+        if (att.width && att.height) {
+          // Bubble is clamped: max-w bubble ~65% of column; ~290px on mobile.
+          // Image is `object-contain max-h-360`.
+          const colW = 290;
+          const renderedH = Math.min((att.height / att.width) * colW, 360);
+          h = Math.ceil(renderedH);
+        } else {
+          h = att.type === "sticker" ? 160 : 240;
+        }
+      } else if (att?.type === "video") {
+        h = 220;
+      } else if (att?.type === "audio") {
+        h = 64;
+      } else if (att?.type === "document") {
+        h = 56;
+      }
+      // Text contribution: rough single-line ≈ 22px, +24px chrome (padding,
+      // timestamp). Wrapping ~32 chars/line on a 290px bubble.
+      const text = m.text || "";
+      const lines = text ? Math.max(1, Math.ceil(text.length / 32)) : 0;
+      const textH = lines > 0 ? lines * 22 + 24 : 0;
+      h += textH;
+      // Sender label for group chats
+      if (it.showSender && isGroup && !it.isOutgoing && m.sender) h += 18;
+      // mt-2 gap when sender label or new sender block
+      h += it.showSender ? 12 : 4;
+      out[i] = Math.max(40, h);
+    }
+    return out;
+  }, [items, isGroup]);
+
+  // Use the MEDIAN, not the mean, so a handful of tall image bubbles don't
+  // skew `defaultItemHeight` and over-estimate text-only items (which would
+  // make Virtuoso's pre-render scrollHeight too big and cause a downward
+  // correction on mobile scroll-up).
+  const avgItemHeight = useMemo(() => {
+    if (itemMinHeights.length === 0) return 80;
+    const sorted = [...itemMinHeights].sort((a, b) => a - b);
+    const mid = sorted[Math.floor(sorted.length / 2)];
+    return Math.max(40, Math.round(mid));
+  }, [itemMinHeights]);
+
   // Compute the indices (in `items`) of messages that match the search query.
   // Used both for highlighting and for the up/down arrow navigation.
   const matchIndices = useMemo(() => {
@@ -401,53 +466,21 @@ export default function ChatView() {
     return out;
   }, [items]);
 
-  const [topVisibleIndex, setTopVisibleIndex] = useState(0);
-  const updateTopVisibleRef = useRef<() => void>(() => {});
+  const separatorIndices = useMemo(() => {
+    const s = new Set<number>();
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type === "separator") s.add(i);
+    }
+    return s;
+  }, [items]);
 
-  // Virtuoso's `rangeChanged` reports the rendered (overscan-inclusive) range,
-  // not the visible range — with a large top buffer it stays at 0. So we
-  // listen to the scroller and find the first item whose bottom crosses the
-  // top edge of the scroller. That index drives the floating date pill.
-  useEffect(() => {
-    const scroller = virtuosoScrollerRef.current as HTMLElement | null;
-    if (!scroller) return;
-    let rafId = 0;
-    const update = () => {
-      const sRect = scroller.getBoundingClientRect();
-      const elems = scroller.querySelectorAll<HTMLElement>("[data-item-index]");
-      for (const el of elems) {
-        const r = el.getBoundingClientRect();
-        if (r.bottom > sRect.top + 1) {
-          const idx = Number(el.getAttribute("data-item-index"));
-          if (!Number.isNaN(idx)) setTopVisibleIndex(idx);
-          return;
-        }
-      }
-    };
-    updateTopVisibleRef.current = update;
-    const onScroll = () => {
-      cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(update);
-    };
-    scroller.addEventListener("scroll", onScroll, { passive: true });
-    update();
-    return () => {
-      scroller.removeEventListener("scroll", onScroll);
-      cancelAnimationFrame(rafId);
-      updateTopVisibleRef.current = () => {};
-    };
-  }, [activeChatId, items.length]);
-
-  const stickyDate = useMemo<Date | null>(() => {
-    if (items.length === 0) return null;
-    const idx = Math.max(0, Math.min(topVisibleIndex, itemDates.length - 1));
-    if (idx <= 0) return null;
-    // While an inline separator is the topmost item, hide the floating pill
-    // so the two don't double-render with the same date.
-    const topItem = items[idx];
-    if (topItem.type === "separator") return null;
-    return itemDates[idx];
-  }, [topVisibleIndex, itemDates, items]);
+  // Stable getter for the Virtuoso scroller so the floating pill component
+  // can attach its own scroll listener — it owns the scroll-driven state
+  // internally, which keeps ChatView from re-rendering on every scroll frame.
+  const getScroller = useCallback(
+    () => virtuosoScrollerRef.current as HTMLElement | null,
+    [],
+  );
 
   const onPrevMatch = useCallback(() => {
     if (matchIndices.length === 0) return;
@@ -822,9 +855,8 @@ export default function ChatView() {
                   // an unmeasured item's actual height differs from the
                   // `defaultItemHeight` estimate.
                   increaseViewportBy={{ top: 6000, bottom: 1500 }}
-                  defaultItemHeight={120}
+                  defaultItemHeight={avgItemHeight}
                   computeItemKey={(_, item) => item.id}
-                  itemsRendered={() => updateTopVisibleRef.current()}
                   className="chat-scroll overscroll-contain"
                   style={{ position: "absolute", inset: 0 }}
                   itemContent={(index, item) => {
@@ -852,17 +884,15 @@ export default function ChatView() {
                   }}
                 />
               )}
-              {/* Floating sticky date pill — shows the date of the topmost
-                  visible section, like WhatsApp's hovering date header. */}
-              <div
-                className={`pointer-events-none absolute top-2 left-1/2 -translate-x-1/2 z-10 transition-opacity duration-200 ${
-                  stickyDate ? "opacity-100" : "opacity-0"
-                }`}
-              >
-                <div className="bg-wa-panel/95 text-wa-text-muted text-xs px-3 py-1.5 rounded-md shadow-sm">
-                  {stickyDate ? formatDateSeparator(stickyDate, dict) : ""}
-                </div>
-              </div>
+              {/* Floating sticky date pill — owns its own scroll listener so
+                  ChatView doesn't re-render on every scroll frame. */}
+              <StickyDatePill
+                getScroller={getScroller}
+                itemDates={itemDates}
+                separatorIndices={separatorIndices}
+                dict={dict}
+                renderTick={items.length}
+              />
               <button
                 type="button"
                 onClick={scrollToBottom}
