@@ -774,28 +774,30 @@ export default function ChatView() {
               </button>
             </header>
 
+            {/* `grid-template-rows` interpolation is layout-heavy and stutters
+                on lower-end mobile. `max-height` only invalidates a single
+                axis and avoids reflowing the whole filter panel on every
+                animation frame. */}
             <div
-              className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-300 ease-out ${
+              className={`overflow-hidden transition-[max-height,opacity] duration-300 ease-out ${
                 searchOpen
-                  ? "grid-rows-[1fr] opacity-100"
-                  : "grid-rows-[0fr] opacity-0"
+                  ? "max-h-[600px] opacity-100"
+                  : "max-h-0 opacity-0"
               }`}
               aria-hidden={!searchOpen}
             >
-              <div className="min-h-0 overflow-hidden">
-                <ChatFilters
-                  value={filters}
-                  onChange={setFilters}
-                  participants={activeChat.participants}
-                  matchCount={filteredMessages.length}
-                  searchMatchCount={matchIndices.length}
-                  searchMatchIndex={matchPos}
-                  onPrevMatch={onPrevMatch}
-                  onNextMatch={onNextMatch}
-                  onClose={closeSearch}
-                  isOpen={searchOpen}
-                />
-              </div>
+              <ChatFilters
+                value={filters}
+                onChange={setFilters}
+                participants={activeChat.participants}
+                matchCount={filteredMessages.length}
+                searchMatchCount={matchIndices.length}
+                searchMatchIndex={matchPos}
+                onPrevMatch={onPrevMatch}
+                onNextMatch={onNextMatch}
+                onClose={closeSearch}
+                isOpen={searchOpen}
+              />
             </div>
 
             <div className="flex-1 min-h-0 relative wa-chat-bg">
@@ -823,7 +825,7 @@ export default function ChatView() {
                   defaultItemHeight={120}
                   computeItemKey={(_, item) => item.id}
                   itemsRendered={() => updateTopVisibleRef.current()}
-                  className="chat-scroll overscroll-none [overflow-anchor:none]"
+                  className="chat-scroll overscroll-contain"
                   style={{ position: "absolute", inset: 0 }}
                   itemContent={(index, item) => {
                     if (!item) return <div style={{ height: 1 }} />;
