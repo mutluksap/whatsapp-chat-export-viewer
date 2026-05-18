@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useI18n } from "./I18nProvider";
 
 export type LightboxItem = {
@@ -27,6 +27,17 @@ export default function Lightbox({ items, start, onClose }: Props) {
   const [index, setIndex] = useState<number>(
     "index" in start ? start.index : 0,
   );
+  const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  // When returning to the gallery from single view, jump to the previously
+  // selected tile instead of scrolling back to the top.
+  useEffect(() => {
+    if (mode !== "gallery") return;
+    const target = itemRefs.current[index];
+    if (target) {
+      target.scrollIntoView({ block: "center", behavior: "auto" });
+    }
+  }, [mode, index]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -84,6 +95,9 @@ export default function Lightbox({ items, start, onClose }: Props) {
               {items.map((it, i) => (
                 <button
                   key={`${it.url}-${i}`}
+                  ref={(el) => {
+                    itemRefs.current[i] = el;
+                  }}
                   type="button"
                   onClick={() => {
                     setIndex(i);

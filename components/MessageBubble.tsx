@@ -75,8 +75,8 @@ function AttachmentView({
 
   if (!att.url) {
     return (
-      <div className="flex items-center gap-2 py-2 px-3 rounded bg-black/5 dark:bg-white/10 text-sm text-wa-text-muted">
-        <i className="fa-solid fa-paperclip text-base shrink-0" aria-hidden />
+      <div className="text-sm leading-snug italic text-wa-text-muted flex items-center gap-1.5">
+        <i className="fa-solid fa-paperclip shrink-0 text-[13px]" aria-hidden />
         <span>{att.filename ? att.filename : t("mediaNotIncluded")}</span>
       </div>
     );
