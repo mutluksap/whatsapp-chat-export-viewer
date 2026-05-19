@@ -49,27 +49,33 @@ body {
   background-image: url("/wa-chat-bg-dark.svg");
 }
 
-/* Tail for outgoing bubbles (right side) */
+/* Tail for outgoing bubbles (right side, bottom corner) */
+.bubble-out {
+  border-bottom-right-radius: 0;
+}
 .bubble-out::after {
   content: "";
   position: absolute;
-  top: 0;
+  bottom: 0;
   right: -8px;
   width: 0;
   height: 0;
-  border-top: 8px solid rgb(var(--wa-bubble-out));
+  border-bottom: 8px solid rgb(var(--wa-bubble-out));
   border-right: 8px solid transparent;
 }
 
-/* Tail for incoming bubbles (left side) */
+/* Tail for incoming bubbles (left side, bottom corner) */
+.bubble-in {
+  border-bottom-left-radius: 0;
+}
 .bubble-in::after {
   content: "";
   position: absolute;
-  top: 0;
+  bottom: 0;
   left: -8px;
   width: 0;
   height: 0;
-  border-top: 8px solid rgb(var(--wa-bubble));
+  border-bottom: 8px solid rgb(var(--wa-bubble));
   border-left: 8px solid transparent;
 }
 

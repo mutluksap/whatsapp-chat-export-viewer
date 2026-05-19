@@ -293,6 +293,7 @@ export default function ChatView() {
         message: Message;
         isOutgoing: boolean;
         showSender: boolean;
+        showTail: boolean;
       };
 
   const items = useMemo<RenderItem[]>(() => {
@@ -300,26 +301,41 @@ export default function ChatView() {
     let prevDate: Date | null = null;
     let prevSender: string | null = null;
     let prevTime: Date | null = null;
+    // Index in `out` of the last real (non-system) message item. Used to flip
+    // its `showTail` once we discover this message ends a group.
+    let lastBubbleIdx: number | null = null;
+
+    const closeGroup = () => {
+      if (lastBubbleIdx !== null) {
+        const item = out[lastBubbleIdx];
+        if (item.type === "message") item.showTail = true;
+      }
+      lastBubbleIdx = null;
+    };
 
     filteredMessages.forEach((msg) => {
       if (msg.timestamp) {
         if (!prevDate || !sameDayPublic(prevDate, msg.timestamp)) {
+          closeGroup();
           out.push({
             type: "separator",
             id: `sep-${msg.id}`,
             date: msg.timestamp,
           });
           prevDate = msg.timestamp;
+          prevSender = null;
         }
       }
 
       if (msg.isSystem) {
+        closeGroup();
         out.push({
           type: "message",
           id: msg.id,
           message: msg,
           isOutgoing: false,
           showSender: false,
+          showTail: false,
         });
         prevSender = null;
         prevTime = msg.timestamp;
@@ -333,18 +349,23 @@ export default function ChatView() {
           : true;
       const showSender = msg.sender !== prevSender || gapBig;
 
+      if (showSender) closeGroup();
+
       out.push({
         type: "message",
         id: msg.id,
         message: msg,
         isOutgoing,
         showSender,
+        showTail: false,
       });
+      lastBubbleIdx = out.length - 1;
 
       prevSender = msg.sender;
       prevTime = msg.timestamp;
     });
 
+    closeGroup();
     return out;
   }, [filteredMessages, meSender]);
 
@@ -875,6 +896,7 @@ export default function ChatView() {
                         message={item.message}
                         isOutgoing={item.isOutgoing}
                         showSender={item.showSender}
+                        showTail={item.showTail}
                         isGroup={isGroup}
                         onMediaClick={handleMediaClick}
                         query={filters.query}

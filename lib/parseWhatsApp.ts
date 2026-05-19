@@ -131,7 +131,11 @@ export function isMediaOmittedLine(text: string): boolean {
     t === "<Medya çıkarıldı>" ||
     t === "<médias omis>" ||
     t === "<multimedia omitido>" ||
-    /^(?:image|video|audio|GIF|sticker|document)\s+omitted$/i.test(t)
+    /^(?:image|video|audio|GIF|sticker|document)\s+omitted$/i.test(t) ||
+    // WhatsApp iOS Turkish: per-type placeholder, sometimes wrapped in <...>
+    /^<?\s*(?:görüntü|video|ses|gif|çıkartma|sticker|belge|doküman)\s+dahil\s+edilmedi\s*>?$/i.test(
+      t,
+    )
   );
 }
 

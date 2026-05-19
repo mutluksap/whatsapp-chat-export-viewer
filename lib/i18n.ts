@@ -194,7 +194,7 @@ const tr: Dict = {
   footerHint:
     "Bu bir önizlemedir — mesaj göndermek için WhatsApp uygulamasını kullanın.",
   participantCount: "{n} katılımcı",
-  mediaNotIncluded: "Medya bu dışa aktarımda yok",
+  mediaNotIncluded: "Medya dahil edilemedi",
   errorWrongExtTxt:
     "Medyasız modu için .txt dosyası bekleniyor. Medyalı için ZIP sekmesini seçin.",
   errorWrongExtZip:

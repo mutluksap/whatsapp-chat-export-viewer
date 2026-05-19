@@ -75,8 +75,8 @@ function AttachmentView({
 
   if (!att.url) {
     return (
-      <div className="text-sm leading-snug italic text-wa-text-muted flex items-center gap-1.5">
-        <i className="fa-solid fa-paperclip shrink-0 text-[13px]" aria-hidden />
+      <div className="text-sm leading-snug whitespace-pre-wrap pr-12 italic text-wa-text-muted flex items-center gap-1.5">
+        <i className="fa-solid fa-ban shrink-0 text-[13px]" aria-hidden />
         <span>{att.filename ? att.filename : t("mediaNotIncluded")}</span>
       </div>
     );
@@ -175,6 +175,7 @@ type Props = {
   message: Message;
   isOutgoing: boolean;
   showSender: boolean;
+  showTail: boolean;
   isGroup: boolean;
   onMediaClick?: (messageId: string) => void;
   query?: string;
@@ -185,6 +186,7 @@ function MessageBubble({
   message,
   isOutgoing,
   showSender,
+  showTail,
   isGroup,
   onMediaClick,
   query,
@@ -215,7 +217,9 @@ function MessageBubble({
     >
       <div
         className={`relative ${bubbleCls} rounded-lg shadow-sm px-2.5 py-1.5 max-w-[85%] sm:max-w-[65%] transition-[outline-color] duration-200 outline outline-2 -outline-offset-2 ${
-          showSender ? (isOutgoing ? "bubble-out mt-2" : "bubble-in mt-2") : "mt-0.5"
+          showSender ? "mt-2" : "mt-0.5"
+        } ${
+          showTail ? (isOutgoing ? "bubble-out" : "bubble-in") : ""
         } ${
           isActiveMatch
             ? "outline-wa-green-dark dark:outline-wa-green"

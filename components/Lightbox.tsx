@@ -112,11 +112,18 @@ export default function Lightbox({ items, start, onClose }: Props) {
                       <video
                         src={it.url}
                         preload="metadata"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover pointer-events-none"
                         muted
                         playsInline
+                        onLoadedMetadata={(e) => {
+                          // preload=metadata alone leaves the frame blank in
+                          // Chromium; nudging currentTime forces the first
+                          // frame to decode so we get a real thumbnail.
+                          const v = e.currentTarget;
+                          if (v.currentTime === 0) v.currentTime = 0.1;
+                        }}
                       />
-                      <span className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/20 transition">
+                      <span className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/20 transition pointer-events-none">
                         <span className="w-10 h-10 rounded-full bg-black/55 flex items-center justify-center">
                           <i
                             className="fa-solid fa-play text-white text-sm ml-0.5"
