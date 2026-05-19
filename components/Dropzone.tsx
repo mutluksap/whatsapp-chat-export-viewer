@@ -48,7 +48,6 @@ function CircularProgress({ progress }: { progress: LoadProgress | null }) {
             strokeDasharray={c}
             strokeDashoffset={c * (1 - pct)}
             transform="rotate(-90 25 25)"
-            style={{ transition: "stroke-dashoffset 200ms ease-out" }}
           />
         </svg>
       ) : (
