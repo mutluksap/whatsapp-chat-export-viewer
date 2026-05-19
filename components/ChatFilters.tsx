@@ -126,7 +126,13 @@ export default function ChatFilters({
             <i className="fa-solid fa-arrow-left text-sm" aria-hidden />
           </button>
         )}
-        <div className="flex-1 min-w-0 flex items-center gap-2 bg-wa-raised rounded-full px-3 py-1.5 ring-1 ring-wa-divider/40 focus-within:ring-wa-green/50 transition">
+        {/* <form> wrapper makes the iOS keyboard chevrons treat the prev/next
+            buttons as form-navigable targets — otherwise the chevrons are
+            grayed out because the input looks like it has no siblings. */}
+        <form
+          onSubmit={(e) => e.preventDefault()}
+          className="flex-1 min-w-0 flex items-center gap-2 bg-wa-raised rounded-full px-3 py-1.5 ring-1 ring-wa-divider/40 focus-within:ring-wa-green/50 transition"
+        >
           <i
             className="fa-solid fa-magnifying-glass text-xs text-wa-text-muted"
             aria-hidden
@@ -155,6 +161,16 @@ export default function ChatFilters({
               <button
                 type="button"
                 onClick={onPrevMatch}
+                // Prevent the button from stealing focus on pointer/click —
+                // otherwise both onClick and onFocus fire and we navigate twice.
+                onMouseDown={(e) => e.preventDefault()}
+                // iOS keyboard "up" chevron lands focus here. Run the
+                // navigation, then bounce focus back to the input so the
+                // keyboard stays open and the caret stays put.
+                onFocus={() => {
+                  onPrevMatch?.();
+                  inputRef.current?.focus();
+                }}
                 disabled={searchMatchCount === 0}
                 className="shrink-0 w-6 h-6 rounded-full text-wa-text-muted hover:text-wa-text hover:bg-black/5 dark:hover:bg-white/5 flex items-center justify-center transition disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-wa-text-muted"
                 aria-label={t("prevMatch")}
@@ -165,6 +181,11 @@ export default function ChatFilters({
               <button
                 type="button"
                 onClick={onNextMatch}
+                onMouseDown={(e) => e.preventDefault()}
+                onFocus={() => {
+                  onNextMatch?.();
+                  inputRef.current?.focus();
+                }}
                 disabled={searchMatchCount === 0}
                 className="shrink-0 w-6 h-6 rounded-full text-wa-text-muted hover:text-wa-text hover:bg-black/5 dark:hover:bg-white/5 flex items-center justify-center transition disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-wa-text-muted"
                 aria-label={t("nextMatch")}
@@ -175,6 +196,7 @@ export default function ChatFilters({
               <button
                 type="button"
                 onClick={() => onChange({ ...value, query: "" })}
+                onMouseDown={(e) => e.preventDefault()}
                 className="text-wa-text-muted hover:text-wa-text shrink-0"
                 aria-label={t("close")}
               >
@@ -182,7 +204,7 @@ export default function ChatFilters({
               </button>
             </>
           )}
-        </div>
+        </form>
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}

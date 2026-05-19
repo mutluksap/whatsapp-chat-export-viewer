@@ -456,6 +456,21 @@ export default function ChatView() {
     setMatchPos(0);
   }, [filters.query]);
 
+  // Only one voice note plays at a time — when any <audio> starts, pause the
+  // rest. `play` doesn't bubble, so the listener has to run in the capture
+  // phase to catch it from the document root.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const target = e.target;
+      if (!(target instanceof HTMLAudioElement)) return;
+      document.querySelectorAll("audio").forEach((a) => {
+        if (a !== target && !a.paused) a.pause();
+      });
+    };
+    document.addEventListener("play", handler, true);
+    return () => document.removeEventListener("play", handler, true);
+  }, []);
+
   // Scroll the active match into view when matchPos or the match set changes.
   useEffect(() => {
     if (matchIndices.length === 0) return;

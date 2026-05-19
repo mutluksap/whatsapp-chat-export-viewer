@@ -96,8 +96,8 @@ function AttachmentView({
         onClick={() => onMediaClick?.(message.id)}
         className={
           isSticker
-            ? "block focus:outline-none focus:ring-2 focus:ring-wa-green rounded"
-            : "block focus:outline-none focus:ring-2 focus:ring-wa-green rounded overflow-hidden"
+            ? "block w-fit focus:outline-none focus:ring-2 focus:ring-wa-green rounded"
+            : "block w-fit focus:outline-none focus:ring-2 focus:ring-wa-green rounded overflow-hidden"
         }
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -110,8 +110,8 @@ function AttachmentView({
           style={dimsStyle}
           className={
             isSticker
-              ? "max-w-[160px] max-h-[160px] cursor-zoom-in"
-              : "rounded-md max-w-full max-h-[360px] object-contain cursor-zoom-in"
+              ? "max-w-[160px] max-h-[160px] w-auto h-auto cursor-zoom-in"
+              : "rounded-md max-w-full max-h-[360px] w-auto h-auto object-contain cursor-zoom-in"
           }
         />
       </button>
@@ -120,11 +120,11 @@ function AttachmentView({
 
   if (att.type === "video") {
     return (
-      <div className="relative">
+      <div className="relative w-fit">
         <video
           src={att.url}
           preload="none"
-          className="rounded-md max-w-full max-h-[360px] cursor-zoom-in block"
+          className="rounded-md max-w-full max-h-[360px] w-auto h-auto cursor-zoom-in block"
           onClick={(e) => {
             e.preventDefault();
             onMediaClick?.(message.id);
@@ -216,7 +216,7 @@ function MessageBubble({
       className={`flex px-3 sm:px-6 ${isOutgoing ? "justify-end" : "justify-start"}`}
     >
       <div
-        className={`relative ${bubbleCls} rounded-lg shadow-sm px-2.5 py-1.5 max-w-[85%] sm:max-w-[65%] transition-[outline-color] duration-200 outline outline-2 -outline-offset-2 ${
+        className={`relative ${bubbleCls} rounded-lg shadow-sm px-2.5 py-1.5 w-fit max-w-[85%] sm:max-w-[65%] transition-[outline-color] duration-200 outline outline-2 -outline-offset-2 ${
           showSender ? "mt-2" : "mt-0.5"
         } ${
           showTail ? (isOutgoing ? "bubble-out" : "bubble-in") : ""
@@ -236,7 +236,7 @@ function MessageBubble({
         )}
 
         {message.attachment && (
-          <div className="mb-1 -mx-1 -mt-1">
+          <div className="mb-1 -mx-1 -mt-1 w-fit">
             <AttachmentView message={message} onMediaClick={onMediaClick} />
           </div>
         )}
