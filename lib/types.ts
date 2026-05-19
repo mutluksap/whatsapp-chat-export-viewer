@@ -31,7 +31,22 @@ export type ParsedChat = {
   participants: string[];
 };
 
+// Forward-declared to break the cycle with loadChat.ts; the actual
+// MediaResolver class lives there.
+export interface MediaResolverLike {
+  resolve(rawName: string): Promise<{
+    url: string;
+    mimeType: string;
+    width?: number;
+    height?: number;
+  } | null>;
+  release(rawName: string): void;
+  hasEntry(rawName: string): boolean;
+  close(): Promise<void>;
+}
+
 export type LoadedChat = ParsedChat & {
-  mediaBlobUrls: string[];
+  /** Null when the chat was loaded from a bare .txt file (no media). */
+  mediaResolver: MediaResolverLike | null;
   hasMedia: boolean;
 };

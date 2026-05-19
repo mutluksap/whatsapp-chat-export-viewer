@@ -250,22 +250,23 @@ export default function ChatView() {
   const { lightboxItems, msgIdToMediaIndex } = useMemo(() => {
     const items: LightboxItem[] = [];
     const map = new Map<string, number>();
+    const resolver = activeChat?.mediaResolver ?? null;
     for (const msg of activeChat?.messages ?? []) {
       const att = msg.attachment;
       if (
-        att?.url &&
+        att?.filename &&
+        resolver?.hasEntry(att.filename) &&
         (att.type === "image" || att.type === "video" || att.type === "sticker")
       ) {
         map.set(msg.id, items.length);
         items.push({
-          url: att.url,
-          type: att.type,
           filename: att.filename,
+          type: att.type,
         });
       }
     }
     return { lightboxItems: items, msgIdToMediaIndex: map };
-  }, [activeChat?.messages]);
+  }, [activeChat?.messages, activeChat?.mediaResolver]);
 
   const handleMediaClick = useCallback(
     (messageId: string) => {

@@ -2,11 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useI18n } from "./I18nProvider";
+import { useMediaUrl } from "./useMediaUrl";
 
 export type LightboxItem = {
-  url: string;
-  type: "image" | "video" | "sticker";
   filename: string;
+  type: "image" | "video" | "sticker";
 };
 
 export type LightboxStart = { index: number } | { gallery: true };
@@ -18,6 +18,143 @@ type Props = {
   start: LightboxStart;
   onClose: () => void;
 };
+
+/**
+ * A single gallery tile. Uses IntersectionObserver to only resolve media
+ * for tiles that are at or near the viewport — without this, opening the
+ * gallery on a media-heavy chat would resolve hundreds of blobs at once
+ * and exhaust mobile Safari's blob memory budget.
+ */
+function GalleryTile({
+  item,
+  onClick,
+  registerRef,
+}: {
+  item: LightboxItem;
+  onClick: () => void;
+  registerRef: (el: HTMLButtonElement | null) => void;
+}) {
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = buttonRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setVisible(entry.isIntersecting),
+      { rootMargin: "300px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const media = useMediaUrl(visible ? item.filename : undefined);
+
+  return (
+    <button
+      ref={(el) => {
+        buttonRef.current = el;
+        registerRef(el);
+      }}
+      type="button"
+      onClick={onClick}
+      className="relative aspect-square overflow-hidden rounded-md bg-white/5 hover:ring-2 hover:ring-wa-green focus:outline-none focus:ring-2 focus:ring-wa-green group"
+      title={item.filename}
+      aria-label={item.filename}
+    >
+      {!media ? (
+        <div className="absolute inset-0 bg-white/10 animate-pulse" />
+      ) : item.type === "video" ? (
+        <>
+          <video
+            src={media.url}
+            preload="metadata"
+            className="w-full h-full object-cover pointer-events-none"
+            muted
+            playsInline
+            onLoadedMetadata={(e) => {
+              const v = e.currentTarget;
+              if (v.currentTime === 0) v.currentTime = 0.1;
+            }}
+          />
+          <span className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/20 transition pointer-events-none">
+            <span className="w-10 h-10 rounded-full bg-black/55 flex items-center justify-center">
+              <i
+                className="fa-solid fa-play text-white text-sm ml-0.5"
+                aria-hidden
+              />
+            </span>
+          </span>
+        </>
+      ) : (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
+          src={media.url}
+          alt={item.filename}
+          className="w-full h-full object-cover"
+        />
+      )}
+    </button>
+  );
+}
+
+function SingleContent({ item }: { item: LightboxItem }) {
+  const media = useMediaUrl(item.filename);
+  if (!media) {
+    return (
+      <div className="w-64 h-64 bg-white/10 rounded animate-pulse" />
+    );
+  }
+  return item.type === "video" ? (
+    <video
+      key={media.url}
+      src={media.url}
+      controls
+      autoPlay
+      className="max-w-[92vw] max-h-[88vh] rounded"
+    />
+  ) : (
+    /* eslint-disable-next-line @next/next/no-img-element */
+    <img
+      key={media.url}
+      src={media.url}
+      alt={item.filename}
+      className="max-w-[92vw] max-h-[88vh] object-contain rounded"
+    />
+  );
+}
+
+function DownloadButton({
+  item,
+  label,
+}: {
+  item: LightboxItem;
+  label: string;
+}) {
+  const media = useMediaUrl(item.filename);
+  if (!media) {
+    return (
+      <span
+        className="w-10 h-10 rounded-full flex items-center justify-center opacity-40"
+        aria-hidden
+      >
+        <i className="fa-solid fa-download text-lg" />
+      </span>
+    );
+  }
+  return (
+    <a
+      href={media.url}
+      download={item.filename}
+      onClick={(e) => e.stopPropagation()}
+      className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-white/15 transition"
+      aria-label={label}
+      title={label}
+    >
+      <i className="fa-solid fa-download text-lg" aria-hidden />
+    </a>
+  );
+}
 
 export default function Lightbox({ items, start, onClose }: Props) {
   const { t } = useI18n();
@@ -93,59 +230,17 @@ export default function Lightbox({ items, start, onClose }: Props) {
           ) : (
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2">
               {items.map((it, i) => (
-                <button
-                  key={`${it.url}-${i}`}
-                  ref={(el) => {
+                <GalleryTile
+                  key={`${it.filename}-${i}`}
+                  item={it}
+                  registerRef={(el) => {
                     itemRefs.current[i] = el;
                   }}
-                  type="button"
                   onClick={() => {
                     setIndex(i);
                     setMode("single");
                   }}
-                  className="relative aspect-square overflow-hidden rounded-md bg-white/5 hover:ring-2 hover:ring-wa-green focus:outline-none focus:ring-2 focus:ring-wa-green group"
-                  title={it.filename}
-                  aria-label={it.filename}
-                >
-                  {it.type === "video" ? (
-                    <>
-                      <video
-                        src={it.url}
-                        preload="metadata"
-                        className="w-full h-full object-cover pointer-events-none"
-                        muted
-                        playsInline
-                        onLoadedMetadata={(e) => {
-                          // preload=metadata alone leaves the frame blank in
-                          // Chromium; nudging currentTime forces the first
-                          // frame to decode so we get a real thumbnail.
-                          const v = e.currentTarget;
-                          if (v.currentTime === 0) v.currentTime = 0.1;
-                        }}
-                      />
-                      <span className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/20 transition pointer-events-none">
-                        <span className="w-10 h-10 rounded-full bg-black/55 flex items-center justify-center">
-                          <i
-                            className="fa-solid fa-play text-white text-sm ml-0.5"
-                            aria-hidden
-                          />
-                        </span>
-                      </span>
-                    </>
-                  ) : (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img
-                      src={it.url}
-                      alt={it.filename}
-                      // Safari + blob URL + loading="lazy" sometimes returns
-                      // broken images on re-mount (after the gallery has been
-                      // closed and reopened). Eager-loading sidesteps the
-                      // cache invalidation; the URLs are local blobs, so the
-                      // cost is negligible.
-                      className="w-full h-full object-cover"
-                    />
-                  )}
-                </button>
+                />
               ))}
             </div>
           )}
@@ -188,16 +283,7 @@ export default function Lightbox({ items, start, onClose }: Props) {
           >
             <i className="fa-solid fa-images text-lg" aria-hidden />
           </button>
-          <a
-            href={item.url}
-            download={item.filename}
-            onClick={(e) => e.stopPropagation()}
-            className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-white/15 transition"
-            aria-label="Download"
-            title="Download"
-          >
-            <i className="fa-solid fa-download text-lg" aria-hidden />
-          </a>
+          <DownloadButton item={item} label="Download" />
           <button
             type="button"
             onClick={(e) => {
@@ -250,23 +336,7 @@ export default function Lightbox({ items, start, onClose }: Props) {
         className="max-w-[92vw] max-h-[88vh] flex items-center justify-center"
         onClick={(e) => e.stopPropagation()}
       >
-        {item.type === "video" ? (
-          <video
-            key={item.url}
-            src={item.url}
-            controls
-            autoPlay
-            className="max-w-[92vw] max-h-[88vh] rounded"
-          />
-        ) : (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img
-            key={item.url}
-            src={item.url}
-            alt={item.filename}
-            className="max-w-[92vw] max-h-[88vh] object-contain rounded"
-          />
-        )}
+        <SingleContent item={item} />
       </div>
     </div>
   );

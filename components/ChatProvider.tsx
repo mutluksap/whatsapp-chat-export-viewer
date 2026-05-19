@@ -13,7 +13,6 @@ import {
   type LoadProgress,
   loadFromTxt,
   loadFromZip,
-  revokeBlobUrls,
 } from "@/lib/loadChat";
 import type { LoadedChat } from "@/lib/types";
 import { useI18n } from "./I18nProvider";
@@ -96,11 +95,12 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     [chats, activeChatId],
   );
 
-  // Revoke media URLs for all chats on unmount.
+  // Close every chat's media resolver on unmount — that revokes any
+  // in-flight blob URLs and releases the zip reader.
   useEffect(() => {
     return () => {
       for (const c of chats) {
-        revokeBlobUrls(c.mediaBlobUrls);
+        c.mediaResolver?.close();
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -183,7 +183,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const deleteChat = useCallback((id: string) => {
     setChats((prev) => {
       const target = prev.find((c) => c.id === id);
-      if (target) revokeBlobUrls(target.mediaBlobUrls);
+      target?.mediaResolver?.close();
       const next = prev.filter((c) => c.id !== id);
       // If the deleted chat was active, switch active to the next available.
       setActiveChatId((curId) => {
@@ -208,7 +208,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const reset = useCallback(() => {
     setChats((prev) => {
-      for (const c of prev) revokeBlobUrls(c.mediaBlobUrls);
+      for (const c of prev) c.mediaResolver?.close();
       return [];
     });
     setActiveChatId(null);

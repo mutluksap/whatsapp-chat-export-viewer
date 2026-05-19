@@ -2,6 +2,8 @@ import { memo } from "react";
 import type { Message } from "@/lib/types";
 import { colorFromName, formatTime } from "@/lib/format";
 import { useI18n } from "./I18nProvider";
+import { useChat } from "./ChatProvider";
+import { useMediaUrl } from "./useMediaUrl";
 
 const URL_RE = /(https?:\/\/[^\s]+)/g;
 
@@ -70,10 +72,18 @@ function AttachmentView({
   onMediaClick?: (messageId: string) => void;
 }) {
   const { t } = useI18n();
+  const { activeChat } = useChat();
+  const resolver = activeChat?.mediaResolver ?? null;
   const att = message.attachment;
+  const filename = att?.filename;
+  const hasEntry = !!(filename && resolver?.hasEntry(filename));
+  // Hook always called (order stable); arg is undefined when there's no
+  // entry so it short-circuits to null inside.
+  const media = useMediaUrl(hasEntry ? filename : undefined);
+
   if (!att) return null;
 
-  if (!att.url) {
+  if (!hasEntry) {
     return (
       <div className="text-sm leading-snug whitespace-pre-wrap pr-12 italic text-wa-text-muted flex items-center gap-1.5">
         <i className="fa-solid fa-ban shrink-0 text-[13px]" aria-hidden />
@@ -82,13 +92,19 @@ function AttachmentView({
     );
   }
 
+  if (!media) {
+    // Entry exists but we haven't decompressed it yet. Show a neutral
+    // placeholder; aspect/dimensions only become known after resolve.
+    return (
+      <div className="w-32 h-32 bg-black/10 dark:bg-white/10 rounded-md animate-pulse" />
+    );
+  }
+
   if (att.type === "image" || att.type === "sticker") {
     const isSticker = att.type === "sticker";
-    // Use width/height attributes when known so the browser reserves the
-    // exact aspect ratio before bytes decode (no layout shift on scroll).
     const dimsStyle: React.CSSProperties | undefined =
-      att.width && att.height
-        ? { aspectRatio: `${att.width} / ${att.height}` }
+      media.width && media.height
+        ? { aspectRatio: `${media.width} / ${media.height}` }
         : undefined;
     return (
       <button
@@ -102,10 +118,10 @@ function AttachmentView({
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={att.url}
+          src={media.url}
           alt={att.filename}
-          width={att.width}
-          height={att.height}
+          width={media.width}
+          height={media.height}
           decoding="async"
           style={dimsStyle}
           className={
@@ -122,7 +138,7 @@ function AttachmentView({
     return (
       <div className="relative w-fit">
         <video
-          src={att.url}
+          src={media.url}
           preload="none"
           className="rounded-md max-w-full max-h-[360px] w-auto h-auto cursor-zoom-in block"
           onClick={(e) => {
@@ -150,7 +166,7 @@ function AttachmentView({
   if (att.type === "audio") {
     return (
       <audio
-        src={att.url}
+        src={media.url}
         controls
         preload="none"
         className="max-w-full"
@@ -160,7 +176,7 @@ function AttachmentView({
 
   return (
     <a
-      href={att.url}
+      href={media.url}
       download={att.filename}
       className="flex items-center gap-2 py-2 px-3 rounded bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/15 text-sm text-wa-text"
       onClick={(e) => e.stopPropagation()}
