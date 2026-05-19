@@ -137,7 +137,11 @@ export default function Lightbox({ items, start, onClose }: Props) {
                     <img
                       src={it.url}
                       alt={it.filename}
-                      loading="lazy"
+                      // Safari + blob URL + loading="lazy" sometimes returns
+                      // broken images on re-mount (after the gallery has been
+                      // closed and reopened). Eager-loading sidesteps the
+                      // cache invalidation; the URLs are local blobs, so the
+                      // cost is negligible.
                       className="w-full h-full object-cover"
                     />
                   )}

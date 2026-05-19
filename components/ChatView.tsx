@@ -895,6 +895,18 @@ export default function ChatView() {
                   computeItemKey={(_, item) => item.id}
                   className="chat-scroll overscroll-contain"
                   style={{ position: "absolute", inset: 0 }}
+                  components={{
+                    Footer: () => (
+                      <div
+                        // Breathing room under the last message on mobile —
+                        // also respects iOS home-bar safe area.
+                        className="h-4 sm:h-1"
+                        style={{
+                          paddingBottom: "env(safe-area-inset-bottom)",
+                        }}
+                      />
+                    ),
+                  }}
                   itemContent={(index, item) => {
                     if (!item) return <div style={{ height: 1 }} />;
                     if (item.type === "separator") {
