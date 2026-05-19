@@ -253,17 +253,17 @@ export default function ChatView() {
     const resolver = activeChat?.mediaResolver ?? null;
     for (const msg of activeChat?.messages ?? []) {
       const att = msg.attachment;
-      if (
-        att?.filename &&
-        resolver?.hasEntry(att.filename) &&
-        (att.type === "image" || att.type === "video" || att.type === "sticker")
-      ) {
-        map.set(msg.id, items.length);
-        items.push({
-          filename: att.filename,
-          type: att.type,
-        });
-      }
+      if (!att?.filename || !resolver?.hasEntry(att.filename)) continue;
+      // Only photos and videos in the gallery — exclude stickers and
+      // animated GIFs (GIFs parse as type "image", filter by extension).
+      const isGif = att.filename.toLowerCase().endsWith(".gif");
+      if (isGif) continue;
+      if (att.type !== "image" && att.type !== "video") continue;
+      map.set(msg.id, items.length);
+      items.push({
+        filename: att.filename,
+        type: att.type,
+      });
     }
     return { lightboxItems: items, msgIdToMediaIndex: map };
   }, [activeChat?.messages, activeChat?.mediaResolver]);
